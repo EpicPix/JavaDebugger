@@ -7,7 +7,7 @@ public class ReplyData {
     public int length;
     public int id;
     public int flags;
-    public int errorCode;
+    public ErrorCodes errorCode;
     public DataInput input;
 
 }

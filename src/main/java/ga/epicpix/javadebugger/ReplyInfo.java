@@ -5,5 +5,5 @@ import java.io.IOException;
 
 @FunctionalInterface
 public interface ReplyInfo<T> {
-    public T handle(int length, int errorCode, DataInput input) throws IOException;
+    public T handle(int length, ErrorCodes errorCode, DataInput input) throws IOException;
 }

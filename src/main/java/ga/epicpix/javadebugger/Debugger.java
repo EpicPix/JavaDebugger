@@ -11,6 +11,7 @@ public class Debugger implements IReadWrite {
     private int id;
     private final ConcurrentHashMap<Integer, ReplyData> replies = new ConcurrentHashMap<>();
     private volatile boolean handshakeDone = false;
+    private VMCapabilities capabilities;
 
     public Debugger(DataOutput output, DataInput input) {
         this.output = output;
@@ -30,7 +31,7 @@ public class Debugger implements IReadWrite {
                         reply.length = length;
                         reply.id = id;
                         reply.flags = flags;
-                        reply.errorCode = errorCode;
+                        reply.errorCode = ErrorCodes.getErrorCode(errorCode);
                         reply.input = i;
                         replies.put(id, reply);
                     } else {
@@ -111,9 +112,10 @@ public class Debugger implements IReadWrite {
     }
 
     public VMCapabilities Capabilities() throws IOException {
+        if(capabilities != null) return capabilities;
         int id = GetIdAndIncrement();
         SendPacketHeader(0, id, 0x00, 1, 17);
-        return WaitForReply(id, (length, errorCode, input) -> {
+        return capabilities = WaitForReply(id, (length, errorCode, input) -> {
             int caps = 0;
             for(int i = 0; i<32; i++) caps |= input.readByte() << i;
             return new VMCapabilities(caps);
