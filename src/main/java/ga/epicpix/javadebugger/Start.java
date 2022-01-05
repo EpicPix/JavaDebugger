@@ -32,8 +32,12 @@ public class Start {
                             debugger.Capabilities().Print();
                         }if(split[0].equals("version") || split[0].equals("ver")) {
                             debugger.Version().Print();
-                        }else if(split[0].equals("exit")) {
+                        }else if(split[0].equals("quit") || split[0].equals("q")) {
                             System.exit(0);
+                        }else if(split[0].equals("kill")) {
+                            int code = split.length >= 2 ? Integer.parseInt(split[1]) : 0;
+                            debugger.Exit(code);
+                            return;
                         }else {
                             System.out.println("Unknown command");
                         }

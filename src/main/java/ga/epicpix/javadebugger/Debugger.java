@@ -147,4 +147,11 @@ public class Debugger implements IReadWrite {
         return version = WaitForReply(id, (length, errorCode, input, bytes) -> new VMVersion(input.ReadString(), input.ReadInt(), input.ReadInt(), input.ReadString(), input.ReadString()));
     }
 
+    public void Exit(int exitCode) throws IOException {
+        SendPacketHeader(4, GetIdAndIncrement(), 0x00, 1, 10);
+        WriteInt(exitCode);
+        if(output instanceof DataOutputStream out) out.close();
+        if(input instanceof DataInputStream in) in.close();
+    }
+
 }
