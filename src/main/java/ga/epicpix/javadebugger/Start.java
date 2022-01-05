@@ -4,8 +4,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-
-import static ga.epicpix.javadebugger.Debugger.*;
+import java.util.Scanner;
 
 public class Start {
 
@@ -19,10 +18,23 @@ public class Start {
             Socket socket = new Socket(address, port);
             DataOutputStream output = new DataOutputStream(socket.getOutputStream());
             DataInputStream input = new DataInputStream(socket.getInputStream());
-            setActiveDebugger(new Debugger(output, input));
+            Debugger debugger = new Debugger(output, input);
 
-            if(PerformHandshake()) {
+            if(debugger.PerformHandshake()) {
                 System.out.println("Handshake succeeded");
+                Scanner scanner = new Scanner(System.in);
+                while(true) {
+                    if(scanner.hasNextLine()) {
+                        String line = scanner.nextLine();
+                        String[] split = line.split(" ");
+                        if(split[0].equals("caps") || split[0].equals("capabilities")) {
+                            System.out.println("Capabilities:");
+                            debugger.Capabilities().Print();
+                        }else {
+                            System.out.println("Unknown command");
+                        }
+                    }
+                }
             }else throw new RuntimeException("Handshake failed");
         }else {
             throw new IllegalArgumentException("Missing required argument 'host'");
