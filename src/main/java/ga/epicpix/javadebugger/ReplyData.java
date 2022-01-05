@@ -9,5 +9,6 @@ public class ReplyData {
     public int flags;
     public ErrorCodes errorCode;
     public DataInput input;
+    public byte[] bytes;
 
 }

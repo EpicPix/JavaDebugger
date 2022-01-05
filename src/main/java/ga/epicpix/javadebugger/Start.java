@@ -30,6 +30,10 @@ public class Start {
                         if(split[0].equals("caps") || split[0].equals("capabilities")) {
                             System.out.println("Capabilities:");
                             debugger.Capabilities().Print();
+                        }if(split[0].equals("version") || split[0].equals("ver")) {
+                            debugger.Version().Print();
+                        }else if(split[0].equals("exit")) {
+                            System.exit(0);
                         }else {
                             System.out.println("Unknown command");
                         }
