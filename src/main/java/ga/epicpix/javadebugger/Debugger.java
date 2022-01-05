@@ -34,7 +34,9 @@ public class Debugger implements IReadWrite {
                         reply.input = i;
                         replies.put(id, reply);
                     } else {
-                        throw new RuntimeException("CAnnot receive commands from the JVM");
+                        int commandSet = i.readUnsignedByte();
+                        int command = i.readUnsignedByte();
+                        System.err.println("Unknown command from JVM: " + commandSet + "-" + command);
                     }
                 }
             }catch(IOException e) {
@@ -111,7 +113,11 @@ public class Debugger implements IReadWrite {
     public VMCapabilities Capabilities() throws IOException {
         int id = GetIdAndIncrement();
         SendPacketHeader(0, id, 0x00, 1, 17);
-        return WaitForReply(id, (length, errorCode, input) -> new VMCapabilities(input.readInt()));
+        return WaitForReply(id, (length, errorCode, input) -> {
+            int caps = 0;
+            for(int i = 0; i<32; i++) caps |= input.readByte() << i;
+            return new VMCapabilities(caps);
+        });
     }
 
 }
