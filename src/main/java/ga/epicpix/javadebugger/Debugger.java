@@ -52,8 +52,8 @@ public class Debugger implements IReadWrite {
         return id++;
     }
 
-    public void WriteBytes(byte[] b) throws IOException {
-        output.write(b);
+    public void WriteBytes(byte[] b, int off, int len) throws IOException {
+        output.write(b, off, len);
     }
 
     public void WriteByte(byte b) throws IOException {
