@@ -49,8 +49,9 @@ public class Start {
                         }else if(cmd.equals("allthreads")) {
                             System.out.println("All Threads:");
                             ArrayList<TypeId> threadIds = debugger.AllThreads();
-                            for(TypeId threadId : threadIds)
-                                System.out.println(threadId);
+                            for(TypeId threadId : threadIds) {
+                                System.out.println(threadId + " - \"" + debugger.ThreadName(threadId) + "\"");
+                            }
                         }else if(cmd.equals("version") || cmd.equals("ver")) {
                             debugger.Version().Print();
                         }else if(cmd.equals("quit") || cmd.equals("q")) {

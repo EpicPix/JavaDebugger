@@ -204,4 +204,12 @@ public class Debugger implements IReadWrite {
             return threadIds;
         });
     }
+
+    public String ThreadName(TypeId threadId) throws IOException {
+        int id = GetIdAndIncrement();
+        SendPacketHeader(threadId.size(), id, 0x00, 11, 1);
+        WriteTypeId(threadId);
+        return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadString());
+    }
+
 }

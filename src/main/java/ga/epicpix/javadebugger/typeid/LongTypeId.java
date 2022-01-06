@@ -21,4 +21,8 @@ public final class LongTypeId extends TypeId {
         return "0x" + "0".repeat(16 - hex.length()) + hex;
     }
 
+    public int size() {
+        return 8;
+    }
+
 }

@@ -21,4 +21,8 @@ public final class IntegerTypeId extends TypeId {
         return "0x" + "0".repeat(8 - hex.length()) + hex;
     }
 
+    public int size() {
+        return 4;
+    }
+
 }

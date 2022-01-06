@@ -8,6 +8,7 @@ public abstract sealed class TypeId permits ByteTypeId, ShortTypeId, IntegerType
 
     public abstract void write(IReadWrite out) throws IOException;
     public abstract void read(IReadWrite in) throws IOException;
+    public abstract int size();
     public abstract String toString();
 
 }

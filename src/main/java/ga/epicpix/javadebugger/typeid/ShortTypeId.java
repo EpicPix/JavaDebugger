@@ -21,4 +21,8 @@ public final class ShortTypeId extends TypeId {
         return "0x" + "0".repeat(4 - hex.length()) + hex;
     }
 
+    public int size() {
+        return 2;
+    }
+
 }

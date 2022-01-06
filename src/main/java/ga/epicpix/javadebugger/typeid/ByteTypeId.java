@@ -21,4 +21,8 @@ public final class ByteTypeId extends TypeId {
         return "0x" + "0".repeat(2 - hex.length()) + hex;
     }
 
+    public int size() {
+        return 1;
+    }
+
 }
