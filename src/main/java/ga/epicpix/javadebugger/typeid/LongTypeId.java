@@ -8,6 +8,9 @@ public final class LongTypeId extends TypeId {
 
     private long val;
 
+    public LongTypeId() {}
+    public LongTypeId(long val) {this.val = val;}
+
     public void write(IReadWrite out) throws IOException {
         out.WriteLong(val);
     }

@@ -1,6 +1,7 @@
 package ga.epicpix.javadebugger;
 
 import ga.epicpix.javadebugger.typeid.TypeId;
+import ga.epicpix.javadebugger.typeid.TypeIdTypes;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -188,6 +189,24 @@ public class Debugger implements IReadWrite {
                 classList.add(new VMClassInfoData(refTypeTag, typeId, signature, status));
             }
             return classList;
+        });
+    }
+
+    public ArrayList<VMMethodInfoData> Methods(TypeId referenceId) throws IOException {
+        int id = GetIdAndIncrement();
+        SendPacketHeader(IdSizes().ReferenceTypeIdSize(), id, 0x00, 2, 5);
+        WriteTypeId(referenceId);
+        return WaitForReply(id, (length, errorCode, input, bytes) -> {
+            int methods = input.ReadInt();
+            ArrayList<VMMethodInfoData> methodList = new ArrayList<>(methods);
+            for(int i = 0; i<methods; i++) {
+                TypeId typeId = input.ReadTypeId(TypeIdTypes.REFERENCE_TYPE_ID, IdSizes());
+                String name = input.ReadString();
+                String signature = input.ReadString();
+                int modBits = input.ReadInt();
+                methodList.add(new VMMethodInfoData(typeId, name, signature, modBits));
+            }
+            return methodList;
         });
     }
 

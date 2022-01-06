@@ -8,6 +8,9 @@ public final class ShortTypeId extends TypeId {
 
     private short val;
 
+    public ShortTypeId() {}
+    public ShortTypeId(short val) {this.val = val;}
+
     public void write(IReadWrite out) throws IOException {
         out.WriteShort(val);
     }

@@ -1,5 +1,7 @@
 package ga.epicpix.javadebugger;
 
+import ga.epicpix.javadebugger.typeid.TypeIdTypes;
+
 public record VMIdSizes(int FieldIdSize, int MethodIdSize, int ObjectIdSize, int ReferenceTypeIdSize, int FrameIdSize) {
 
     public void Print() {

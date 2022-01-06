@@ -10,6 +10,8 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import ga.epicpix.javadebugger.typeid.TypeId;
+import ga.epicpix.javadebugger.typeid.TypeIdArgumentType;
+import ga.epicpix.javadebugger.typeid.TypeIdTypes;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -49,7 +51,7 @@ public class Start {
             dispatcher.register(literal(alias).redirect(command).executes(command.getCommand()));
     }
 
-    public static void registerCommands(CommandDispatcher<Debugger> dispatcher) {
+    public static void registerCommands(CommandDispatcher<Debugger> dispatcher, Debugger deb) throws IOException {
         alias(dispatcher, dispatcher.register(literal("capabilities").executes(d -> silenceException(d, (debugger) -> {
             System.out.println("Capabilities:");
             debugger.Capabilities().Print();
@@ -91,6 +93,14 @@ public class Start {
             System.out.println("String Id: " + debugger.CreateString(StringArgumentType.getString(d, "string")));
         }))));
 
+        dispatcher.register(literal("methods").then(argument("typeid", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.OBJECT_ID)).executes(d -> silenceException(d, (debugger) -> {
+            System.out.println("Methods:");
+            ArrayList<VMMethodInfoData> methodList = debugger.Methods(d.getArgument("typeid", TypeId.class));
+            for(VMMethodInfoData methodInfo : methodList) {
+                System.out.println(methodInfo.methodId() + " " + methodInfo.name() + " " + methodInfo.signature() + " " + methodInfo.modBits());
+            }
+        }))));
+
         dispatcher.register(literal("kill").executes(d -> silenceException(d, (debugger) -> {
             debugger.Exit(0);
             System.exit(0);
@@ -112,12 +122,12 @@ public class Start {
             DataInputStream input = new DataInputStream(socket.getInputStream());
             Debugger debugger = new Debugger(output, input);
 
-            CommandDispatcher<Debugger> dispatcher = new CommandDispatcher<>();
-            registerCommands(dispatcher);
-
             if(debugger.PerformHandshake()) {
                 System.out.println("Handshake succeeded");
                 Scanner scanner = new Scanner(System.in);
+
+                CommandDispatcher<Debugger> dispatcher = new CommandDispatcher<>();
+                registerCommands(dispatcher, debugger);
                 while(true) {
                     if(scanner.hasNextLine()) {
                         String line = scanner.nextLine().replace("\\n", "\n");

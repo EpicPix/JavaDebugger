@@ -1,4 +1,4 @@
-package ga.epicpix.javadebugger;
+package ga.epicpix.javadebugger.typeid;
 
 public enum TypeIdTypes {
 

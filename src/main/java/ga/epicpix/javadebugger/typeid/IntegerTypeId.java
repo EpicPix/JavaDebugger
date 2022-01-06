@@ -8,6 +8,9 @@ public final class IntegerTypeId extends TypeId {
 
     private int val;
 
+    public IntegerTypeId() {}
+    public IntegerTypeId(int val) {this.val = val;}
+
     public void write(IReadWrite out) throws IOException {
         out.WriteInt(val);
     }

@@ -8,6 +8,9 @@ public final class ByteTypeId extends TypeId {
 
     private byte val;
 
+    public ByteTypeId() {}
+    public ByteTypeId(byte val) {this.val = val;}
+
     public void write(IReadWrite out) throws IOException {
         out.WriteByte(val);
     }
