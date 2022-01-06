@@ -1,5 +1,7 @@
 package ga.epicpix.javadebugger;
 
+import ga.epicpix.javadebugger.typeid.TypeId;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -44,6 +46,11 @@ public class Start {
                                 String status = "[" + classInfo.status().getStatus() + "]";
                                 System.out.println(classInfo.referenceTypeId() + " - " + status + " ".repeat(maxStatusLength - status.length()) + " - " + classInfo.refTypeTag() + " ".repeat(maxRefTypeLength - classInfo.refTypeTag().name().length()) + " " + classInfo.signature());
                             }
+                        }else if(cmd.equals("allthreads")) {
+                            System.out.println("All Threads:");
+                            ArrayList<TypeId> threadIds = debugger.AllThreads();
+                            for(TypeId threadId : threadIds)
+                                System.out.println(threadId);
                         }else if(cmd.equals("version") || cmd.equals("ver")) {
                             debugger.Version().Print();
                         }else if(cmd.equals("quit") || cmd.equals("q")) {

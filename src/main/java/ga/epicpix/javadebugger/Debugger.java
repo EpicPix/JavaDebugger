@@ -190,4 +190,18 @@ public class Debugger implements IReadWrite {
             return classList;
         });
     }
+
+    public ArrayList<TypeId> AllThreads() throws IOException {
+        int id = GetIdAndIncrement();
+        SendPacketHeader(0, id, 0x00, 1, 4);
+        return WaitForReply(id, (length, errorCode, input, bytes) -> {
+            int threads = input.ReadInt();
+            ArrayList<TypeId> threadIds = new ArrayList<>(threads);
+            for(int i = 0; i<threads; i++) {
+                TypeId typeId = input.ReadTypeId(TypeIdTypes.OBJECT_ID, IdSizes());
+                threadIds.add(typeId);
+            }
+            return threadIds;
+        });
+    }
 }
