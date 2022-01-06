@@ -1,5 +1,12 @@
 package ga.epicpix.javadebugger;
 
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
+import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.tree.LiteralCommandNode;
 import ga.epicpix.javadebugger.typeid.TypeId;
 
 import java.io.DataInputStream;
@@ -10,6 +17,78 @@ import java.util.ArrayList;
 import java.util.Scanner;
 
 public class Start {
+
+    public static LiteralArgumentBuilder<Debugger> literal(String literal) {
+        return LiteralArgumentBuilder.literal(literal);
+    }
+
+    public interface ThrowRunnable {
+        void run(Debugger debugger) throws Exception;
+    }
+
+    public static int silenceException(CommandContext<Debugger> debugger, ThrowRunnable runnable) throws CommandSyntaxException {
+        try {
+            runnable.run(debugger.getSource());
+            return 1;
+        } catch(CommandSyntaxException e) {
+            throw e;
+        } catch(Exception e) {
+            e.printStackTrace();
+            return 0;
+        }
+    }
+
+    public static void alias(CommandDispatcher<Debugger> dispatcher, LiteralCommandNode<Debugger> command, String... aliases) {
+        for(String alias : aliases)
+            dispatcher.register(literal(alias).redirect(command).executes(command.getCommand()));
+    }
+
+    public static void registerCommands(CommandDispatcher<Debugger> dispatcher) {
+        alias(dispatcher, dispatcher.register(literal("capabilities").executes(d -> silenceException(d, (debugger) -> {
+            System.out.println("Capabilities:");
+            debugger.Capabilities().Print();
+        }))), "caps");
+
+        alias(dispatcher, dispatcher.register(literal("version").executes(d -> silenceException(d, (debugger) -> {
+            debugger.Version().Print();
+        }))), "ver");
+
+        alias(dispatcher, dispatcher.register(literal("quit").executes(d -> silenceException(d, (debugger) -> {
+            System.exit(0);
+        }))), "q");
+
+        dispatcher.register(literal("idsizes").executes(d -> silenceException(d, (debugger) -> {
+            System.out.println("Id Sizes:");
+            debugger.IdSizes().Print();
+        })));
+
+        dispatcher.register(literal("allclasses").executes(d -> silenceException(d, (debugger) -> {
+            System.out.println("All Loaded Classes:");
+            ArrayList<VMClassInfoData> classList = debugger.AllClasses();
+            int maxStatusLength = "[VERIFIED, PREPARED, INITIALIZED]".length();
+            int maxRefTypeLength = ReferenceType.INTERFACE.name().length();
+            for(VMClassInfoData classInfo : classList) {
+                String status = "[" + classInfo.status().getStatus() + "]";
+                System.out.println(classInfo.referenceTypeId() + " - " + status + " ".repeat(maxStatusLength - status.length()) + " - " + classInfo.refTypeTag() + " ".repeat(maxRefTypeLength - classInfo.refTypeTag().name().length()) + " " + classInfo.signature());
+            }
+        })));
+
+        dispatcher.register(literal("allthreads").executes(d -> silenceException(d, (debugger) -> {
+            System.out.println("All Threads:");
+            ArrayList<TypeId> threadIds = debugger.AllThreads();
+            for(TypeId threadId : threadIds) {
+                System.out.println(threadId + " - \"" + debugger.ThreadName(threadId) + "\"");
+            }
+        })));
+
+        dispatcher.register(literal("kill").executes(d -> silenceException(d, (debugger) -> {
+            debugger.Exit(0);
+            System.exit(0);
+        })).then(RequiredArgumentBuilder.<Debugger, Integer>argument("exitCode", IntegerArgumentType.integer(0)).executes(d -> silenceException(d, (debugger) -> {
+            debugger.Exit(IntegerArgumentType.getInteger(d, "exitCode"));
+            System.exit(0);
+        }))));
+    }
 
     public static void main(String[] args) throws IOException {
         if(args.length >= 1) {
@@ -23,45 +102,19 @@ public class Start {
             DataInputStream input = new DataInputStream(socket.getInputStream());
             Debugger debugger = new Debugger(output, input);
 
+            CommandDispatcher<Debugger> dispatcher = new CommandDispatcher<>();
+            registerCommands(dispatcher);
+
             if(debugger.PerformHandshake()) {
                 System.out.println("Handshake succeeded");
                 Scanner scanner = new Scanner(System.in);
                 while(true) {
                     if(scanner.hasNextLine()) {
                         String line = scanner.nextLine();
-                        String[] split = line.split(" ");
-                        String cmd = split[0].toLowerCase();
-                        if(cmd.equals("caps") || cmd.equals("capabilities")) {
-                            System.out.println("Capabilities:");
-                            debugger.Capabilities().Print();
-                        }else if(cmd.equals("idsizes")) {
-                            System.out.println("Id Sizes:");
-                            debugger.IdSizes().Print();
-                        }else if(cmd.equals("allclasses")) {
-                            System.out.println("All Loaded Classes:");
-                            ArrayList<VMClassInfoData> classList = debugger.AllClasses();
-                            int maxStatusLength = "[VERIFIED, PREPARED, INITIALIZED]".length();
-                            int maxRefTypeLength = ReferenceType.INTERFACE.name().length();
-                            for(VMClassInfoData classInfo : classList) {
-                                String status = "[" + classInfo.status().getStatus() + "]";
-                                System.out.println(classInfo.referenceTypeId() + " - " + status + " ".repeat(maxStatusLength - status.length()) + " - " + classInfo.refTypeTag() + " ".repeat(maxRefTypeLength - classInfo.refTypeTag().name().length()) + " " + classInfo.signature());
-                            }
-                        }else if(cmd.equals("allthreads")) {
-                            System.out.println("All Threads:");
-                            ArrayList<TypeId> threadIds = debugger.AllThreads();
-                            for(TypeId threadId : threadIds) {
-                                System.out.println(threadId + " - \"" + debugger.ThreadName(threadId) + "\"");
-                            }
-                        }else if(cmd.equals("version") || cmd.equals("ver")) {
-                            debugger.Version().Print();
-                        }else if(cmd.equals("quit") || cmd.equals("q")) {
-                            System.exit(0);
-                        }else if(cmd.equals("kill")) {
-                            int code = split.length >= 2 ? Integer.parseInt(split[1]) : 0;
-                            debugger.Exit(code);
-                            return;
-                        }else {
-                            System.out.println("Unknown command");
+                        try {
+                            dispatcher.execute(line, debugger);
+                        } catch (CommandSyntaxException e) {
+                            System.err.println(e.getMessage());
                         }
                     }
                 }
