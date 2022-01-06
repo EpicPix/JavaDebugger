@@ -10,4 +10,13 @@ public record VMIdSizes(int FieldIdSize, int MethodIdSize, int ObjectIdSize, int
         System.out.println("FrameIdSize: " + FrameIdSize + " bytes");
     }
 
+    public int Size(TypeIdTypes type) {
+        return switch (type) {
+            case FIELD_ID -> FieldIdSize;
+            case METHOD_ID -> MethodIdSize;
+            case OBJECT_ID -> ObjectIdSize;
+            case REFERENCE_TYPE_ID -> ReferenceTypeIdSize;
+            case FRAME_ID -> FrameIdSize;
+        };
+    }
 }

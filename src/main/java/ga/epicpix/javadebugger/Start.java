@@ -4,6 +4,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Scanner;
 
 public class Start {
@@ -27,17 +28,27 @@ public class Start {
                     if(scanner.hasNextLine()) {
                         String line = scanner.nextLine();
                         String[] split = line.split(" ");
-                        if(split[0].equals("caps") || split[0].equals("capabilities")) {
+                        String cmd = split[0].toLowerCase();
+                        if(cmd.equals("caps") || cmd.equals("capabilities")) {
                             System.out.println("Capabilities:");
                             debugger.Capabilities().Print();
-                        }else if(split[0].equals("idsizes")) {
+                        }else if(cmd.equals("idsizes")) {
                             System.out.println("Id Sizes:");
                             debugger.IdSizes().Print();
-                        }else if(split[0].equals("version") || split[0].equals("ver")) {
+                        }else if(cmd.equals("allclasses")) {
+                            System.out.println("All Loaded Classes:");
+                            ArrayList<VMClassInfoData> classList = debugger.AllClasses();
+                            int maxStatusLength = "[VERIFIED, PREPARED, INITIALIZED]".length();
+                            int maxRefTypeLength = ReferenceType.INTERFACE.name().length();
+                            for(VMClassInfoData classInfo : classList) {
+                                String status = "[" + classInfo.status().getStatus() + "]";
+                                System.out.println(classInfo.referenceTypeId() + " - " + status + " ".repeat(maxStatusLength - status.length()) + " - " + classInfo.refTypeTag() + " ".repeat(maxRefTypeLength - classInfo.refTypeTag().name().length()) + " " + classInfo.signature());
+                            }
+                        }else if(cmd.equals("version") || cmd.equals("ver")) {
                             debugger.Version().Print();
-                        }else if(split[0].equals("quit") || split[0].equals("q")) {
+                        }else if(cmd.equals("quit") || cmd.equals("q")) {
                             System.exit(0);
-                        }else if(split[0].equals("kill")) {
+                        }else if(cmd.equals("kill")) {
                             int code = split.length >= 2 ? Integer.parseInt(split[1]) : 0;
                             debugger.Exit(code);
                             return;

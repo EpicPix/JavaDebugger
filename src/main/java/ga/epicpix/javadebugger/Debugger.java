@@ -1,7 +1,9 @@
 package ga.epicpix.javadebugger;
 
+import ga.epicpix.javadebugger.typeid.TypeId;
+
 import java.io.*;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Debugger implements IReadWrite {
@@ -73,6 +75,10 @@ public class Debugger implements IReadWrite {
         output.writeInt(i);
     }
 
+    public void WriteLong(long l) throws IOException {
+        output.writeLong(l);
+    }
+
     public byte[] ReadBytes(int bufSize) throws IOException {
         byte[] bytes = new byte[bufSize];
         for(int i = 0; i<bytes.length; i++)
@@ -92,6 +98,10 @@ public class Debugger implements IReadWrite {
         return input.readInt();
     }
 
+    public long ReadLong() throws IOException {
+        return input.readLong();
+    }
+
     private <T> T WaitForReply(int id, ReplyInfo<T> replyInfo) throws IOException {
         while(replies.get(id) == null) {}
         ReplyData data = replies.get(id);
@@ -101,6 +111,7 @@ public class Debugger implements IReadWrite {
             public void WriteByte(byte b) throws IOException {Debugger.this.WriteByte(b);}
             public void WriteShort(short s) throws IOException {Debugger.this.WriteShort(s);}
             public void WriteInt(int i) throws IOException {Debugger.this.WriteInt(i);}
+            public void WriteLong(long l) throws IOException {Debugger.this.WriteLong(l);}
             public byte[] ReadBytes(int bufSize) throws IOException {
                 byte[] bytes = new byte[bufSize];
                 for(int i = 0; i<bytes.length; i++) bytes[i] = ReadByte();
@@ -109,6 +120,7 @@ public class Debugger implements IReadWrite {
             public byte ReadByte() throws IOException {return data.input.readByte();}
             public short ReadShort() throws IOException {return data.input.readShort();}
             public int ReadInt() throws IOException {return data.input.readInt();}
+            public long ReadLong() throws IOException {return data.input.readLong();}
         }, data.bytes);
     }
 
@@ -162,4 +174,20 @@ public class Debugger implements IReadWrite {
         if(input instanceof DataInputStream in) in.close();
     }
 
+    public ArrayList<VMClassInfoData> AllClasses() throws IOException {
+        int id = GetIdAndIncrement();
+        SendPacketHeader(0, id, 0x00, 1, 3);
+        return WaitForReply(id, (length, errorCode, input, bytes) -> {
+            int classes = input.ReadInt();
+            ArrayList<VMClassInfoData> classList = new ArrayList<>(classes);
+            for(int i = 0; i<classes; i++) {
+                ReferenceType refTypeTag = ReferenceType.getReferenceType(input.ReadByte());
+                TypeId typeId = input.ReadTypeId(TypeIdTypes.REFERENCE_TYPE_ID, IdSizes());
+                String signature = input.ReadString();
+                ClassLoadStatus status = new ClassLoadStatus(input.ReadInt());
+                classList.add(new VMClassInfoData(refTypeTag, typeId, signature, status));
+            }
+            return classList;
+        });
+    }
 }

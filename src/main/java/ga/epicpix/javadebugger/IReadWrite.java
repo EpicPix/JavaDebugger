@@ -1,5 +1,7 @@
 package ga.epicpix.javadebugger;
 
+import ga.epicpix.javadebugger.typeid.*;
+
 import java.io.IOException;
 import java.io.UTFDataFormatException;
 
@@ -10,6 +12,11 @@ public interface IReadWrite {
     void WriteByte(byte b) throws IOException;
     void WriteShort(short s) throws IOException;
     void WriteInt(int i) throws IOException;
+    void WriteLong(long l) throws IOException;
+
+    default void WriteTypeId(TypeId id) throws IOException {
+        id.write(this);
+    }
 
     default void WriteString(String str) throws IOException {
         WriteString(str, this);
@@ -19,6 +26,20 @@ public interface IReadWrite {
     byte ReadByte() throws IOException;
     short ReadShort() throws IOException;
     int ReadInt() throws IOException;
+    long ReadLong() throws IOException;
+
+    default TypeId ReadTypeId(TypeIdTypes type, VMIdSizes sizes) throws IOException {
+        int size = sizes.Size(type);
+        TypeId typeId = switch (size) {
+            case 1 -> new ByteTypeId();
+            case 2 -> new ShortTypeId();
+            case 4 -> new IntegerTypeId();
+            case 8 -> new LongTypeId();
+            default -> throw new RuntimeException("Unsupported TypeId size: " + size);
+        };
+        typeId.read(this);
+        return typeId;
+    }
 
     default String ReadString() throws IOException {
         return ReadString(this);
