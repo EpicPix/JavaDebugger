@@ -14,6 +14,7 @@ public class Debugger implements IReadWrite {
     private volatile boolean handshakeDone = false;
     private VMCapabilities capabilities;
     private VMVersion version;
+    private VMIdSizes idSizes;
 
     public Debugger(DataOutput output, DataInput input) {
         this.output = output;
@@ -145,6 +146,13 @@ public class Debugger implements IReadWrite {
         int id = GetIdAndIncrement();
         SendPacketHeader(0, id, 0x00, 1, 1);
         return version = WaitForReply(id, (length, errorCode, input, bytes) -> new VMVersion(input.ReadString(), input.ReadInt(), input.ReadInt(), input.ReadString(), input.ReadString()));
+    }
+
+    public VMIdSizes IdSizes() throws IOException {
+        if(idSizes != null) return idSizes;
+        int id = GetIdAndIncrement();
+        SendPacketHeader(0, id, 0x00, 1, 7);
+        return idSizes = WaitForReply(id, (length, errorCode, input, bytes) -> new VMIdSizes(input.ReadInt(), input.ReadInt(), input.ReadInt(), input.ReadInt(), input.ReadInt()));
     }
 
     public void Exit(int exitCode) throws IOException {

@@ -1,6 +1,6 @@
 package ga.epicpix.javadebugger;
 
-// https://docs.oracle.com/javase/8/docs/platform/jpda/jdwp/jdwp-protocol.html#JDWP_VirtualMachine_CapabilitiesNew
+// https://docs.oracle.com/en/java/javase/17/docs/specs/jdwp/jdwp-protocol.html#JDWP_VirtualMachine_CapabilitiesNew
 public class VMCapabilities {
 
     public final boolean canWatchFieldModification;        // Can the VM watch field modification, and therefore can it send the Modification Watchpoint Event?
@@ -11,8 +11,8 @@ public class VMCapabilities {
     public final boolean canGetCurrentContendedMonitor;    // Can the VM get the current contended monitor of a thread?
     public final boolean canGetMonitorInfo;                // Can the VM get the monitor information for a given object?
     public final boolean canRedefineClasses;               // Can the VM redefine classes?
-    public final boolean canAddMethod;                     // Can the VM add methods when redefining classes?
-    public final boolean canUnrestrictedlyRedefineClasses; // Can the VM redefine classesin arbitrary ways?
+    public final boolean canAddMethod;                     // @Deprecated(since="15") Can the VM add methods when redefining classes?
+    public final boolean canUnrestrictedlyRedefineClasses; // @Deprecated(since="15") Can the VM redefine classesin arbitrary ways?
     public final boolean canPopFrames;                     // Can the VM pop stack frames?
     public final boolean canUseInstanceFilters;            // Can the VM filter events by specific object?
     public final boolean canGetSourceDebugExtension;       // Can the VM get the source debug extension?
