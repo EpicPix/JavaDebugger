@@ -212,4 +212,11 @@ public class Debugger implements IReadWrite {
         return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadString());
     }
 
+    public TypeId CreateString(String str) throws IOException {
+        int id = GetIdAndIncrement();
+        SendPacketHeader(4 + str.length(), id, 0x00, 1, 11);
+        WriteString(str);
+        return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadTypeId(TypeIdTypes.OBJECT_ID, IdSizes()));
+    }
+
 }

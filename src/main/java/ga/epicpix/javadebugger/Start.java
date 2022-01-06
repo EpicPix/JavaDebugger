@@ -1,7 +1,9 @@
 package ga.epicpix.javadebugger;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.ArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -20,6 +22,10 @@ public class Start {
 
     public static LiteralArgumentBuilder<Debugger> literal(String literal) {
         return LiteralArgumentBuilder.literal(literal);
+    }
+
+    public static <S> RequiredArgumentBuilder<Debugger, S> argument(String name, ArgumentType<S> arg) {
+        return RequiredArgumentBuilder.argument(name, arg);
     }
 
     public interface ThrowRunnable {
@@ -81,10 +87,14 @@ public class Start {
             }
         })));
 
+        dispatcher.register(literal("createstring").then(argument("string", StringArgumentType.string()).executes(d -> silenceException(d, (debugger) -> {
+            System.out.println("String Id: " + debugger.CreateString(StringArgumentType.getString(d, "string")));
+        }))));
+
         dispatcher.register(literal("kill").executes(d -> silenceException(d, (debugger) -> {
             debugger.Exit(0);
             System.exit(0);
-        })).then(RequiredArgumentBuilder.<Debugger, Integer>argument("exitCode", IntegerArgumentType.integer(0)).executes(d -> silenceException(d, (debugger) -> {
+        })).then(argument("exitCode", IntegerArgumentType.integer(0)).executes(d -> silenceException(d, (debugger) -> {
             debugger.Exit(IntegerArgumentType.getInteger(d, "exitCode"));
             System.exit(0);
         }))));
@@ -110,7 +120,7 @@ public class Start {
                 Scanner scanner = new Scanner(System.in);
                 while(true) {
                     if(scanner.hasNextLine()) {
-                        String line = scanner.nextLine();
+                        String line = scanner.nextLine().replace("\\n", "\n");
                         try {
                             dispatcher.execute(line, debugger);
                         } catch (CommandSyntaxException e) {
