@@ -19,7 +19,9 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 public class Start {
 
@@ -100,8 +102,11 @@ public class Start {
             System.out.println("Methods:");
             ArrayList<VMMethodInfoData> methodList = debugger.Methods(d.getArgument("typeid", TypeId.class));
             for(VMMethodInfoData methodInfo : methodList) {
-                System.out.println(methodInfo.methodId() + " " + methodInfo.name() + " " + methodInfo.signature() + " " + methodInfo.modBits());
+                EnumSet<AccessFlags> accessFlags = AccessFlags.getMethodAccessFlags(methodInfo.modBits());
+                String flags = String.join(", ", accessFlags.stream().map(AccessFlags::name).toArray(String[]::new));
+                System.out.println(methodInfo.methodId() + " " + methodInfo.name() + " " + methodInfo.signature() + " [" + flags + "]");
             }
+            if(methodList.size() == 0) System.out.println("<no methods found>");
         }))));
 
         dispatcher.register(literal("kill").executes(d -> silenceException(d, (debugger) -> {
