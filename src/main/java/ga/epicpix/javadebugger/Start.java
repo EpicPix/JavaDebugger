@@ -128,6 +128,17 @@ public class Start {
             if(methodList.size() == 0) System.out.println("<no methods found>");
         }))));
 
+        dispatcher.register(literal("fields").then(argument("typeid", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.OBJECT_ID)).executes(d -> silenceException(d, (debugger) -> {
+            System.out.println("Fields:");
+            ArrayList<VMFieldInfoData> fieldList = debugger.Fields(d.getArgument("typeid", TypeId.class));
+            for(VMFieldInfoData fieldInfo : fieldList) {
+                EnumSet<AccessFlags> accessFlags = AccessFlags.getFieldAccessFlags(fieldInfo.modBits());
+                String flags = String.join(", ", accessFlags.stream().map(AccessFlags::name).toArray(String[]::new));
+                System.out.println(fieldInfo.fieldId() + " " + fieldInfo.name() + " " + fieldInfo.signature() + " [" + flags + "]");
+            }
+            if(fieldList.size() == 0) System.out.println("<no fields found>");
+        }))));
+
         dispatcher.register(literal("superclass").then(argument("typeid", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
             System.out.println("Superclass: " + debugger.SuperClass(d.getArgument("typeid", TypeId.class)));
         }))));

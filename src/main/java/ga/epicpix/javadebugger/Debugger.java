@@ -227,6 +227,24 @@ public class Debugger implements IReadWrite {
         });
     }
 
+    public ArrayList<VMFieldInfoData> Fields(TypeId referenceId) throws IOException {
+        int id = GetIdAndIncrement();
+        SendPacketHeader(IdSizes().ReferenceTypeIdSize(), id, 0x00, 2, 4);
+        WriteTypeId(referenceId);
+        return WaitForReply(id, (length, errorCode, input, bytes) -> {
+            int fields = input.ReadInt();
+            ArrayList<VMFieldInfoData> fieldList = new ArrayList<>(fields);
+            for(int i = 0; i<fields; i++) {
+                TypeId typeId = input.ReadTypeId(TypeIdTypes.REFERENCE_TYPE_ID, IdSizes());
+                String name = input.ReadString();
+                String signature = input.ReadString();
+                int modBits = input.ReadInt();
+                fieldList.add(new VMFieldInfoData(typeId, name, signature, modBits));
+            }
+            return fieldList;
+        });
+    }
+
     public ArrayList<TypeId> AllThreads() throws IOException {
         int id = GetIdAndIncrement();
         SendPacketHeader(0, id, 0x00, 1, 4);
