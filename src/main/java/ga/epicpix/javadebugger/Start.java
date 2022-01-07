@@ -104,6 +104,15 @@ public class Start {
             }
         })));
 
+        dispatcher.register(literal("allmodules").executes(d -> silenceException(d, (debugger) -> {
+            System.out.println("All Modules:");
+            ArrayList<TypeId> moduleIds = debugger.AllModules();
+            for(TypeId moduleId : moduleIds) {
+                String name = debugger.ModuleName(moduleId);
+                System.out.println(moduleId + " - " + (name.isEmpty() ? "<unnamed module>" : name));
+            }
+        })));
+
         dispatcher.register(literal("createstring").then(argument("string", StringArgumentType.string()).executes(d -> silenceException(d, (debugger) -> {
             System.out.println("String Id: " + debugger.CreateString(StringArgumentType.getString(d, "string")));
         }))));

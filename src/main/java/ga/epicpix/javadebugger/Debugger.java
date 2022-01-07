@@ -240,10 +240,30 @@ public class Debugger implements IReadWrite {
             return threadIds;
         });
     }
+    public ArrayList<TypeId> AllModules() throws IOException {
+        int id = GetIdAndIncrement();
+        SendPacketHeader(0, id, 0x00, 1, 22);
+        return WaitForReply(id, (length, errorCode, input, bytes) -> {
+            int threads = input.ReadInt();
+            ArrayList<TypeId> threadIds = new ArrayList<>(threads);
+            for(int i = 0; i<threads; i++) {
+                TypeId typeId = input.ReadTypeId(TypeIdTypes.OBJECT_ID, IdSizes());
+                threadIds.add(typeId);
+            }
+            return threadIds;
+        });
+    }
 
     public String ThreadName(TypeId threadId) throws IOException {
         int id = GetIdAndIncrement();
         SendPacketHeader(threadId.size(), id, 0x00, 11, 1);
+        WriteTypeId(threadId);
+        return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadString());
+    }
+
+    public String ModuleName(TypeId threadId) throws IOException {
+        int id = GetIdAndIncrement();
+        SendPacketHeader(threadId.size(), id, 0x00, 18, 1);
         WriteTypeId(threadId);
         return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadString());
     }
