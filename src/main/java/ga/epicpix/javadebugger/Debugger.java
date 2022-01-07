@@ -192,6 +192,23 @@ public class Debugger implements IReadWrite {
         });
     }
 
+    public ArrayList<VMClassInfoData> ClassesBySignature(String clazz) throws IOException {
+        int id = GetIdAndIncrement();
+        SendPacketHeader(4 + clazz.getBytes().length, id, 0x00, 1, 2);
+        WriteString(clazz);
+        return WaitForReply(id, (length, errorCode, input, bytes) -> {
+            int classes = input.ReadInt();
+            ArrayList<VMClassInfoData> classList = new ArrayList<>(classes);
+            for(int i = 0; i<classes; i++) {
+                ReferenceType refTypeTag = ReferenceType.getReferenceType(input.ReadByte());
+                TypeId typeId = input.ReadTypeId(TypeIdTypes.REFERENCE_TYPE_ID, IdSizes());
+                ClassLoadStatus status = new ClassLoadStatus(input.ReadInt());
+                classList.add(new VMClassInfoData(refTypeTag, typeId, clazz, status));
+            }
+            return classList;
+        });
+    }
+
     public ArrayList<VMMethodInfoData> Methods(TypeId referenceId) throws IOException {
         int id = GetIdAndIncrement();
         SendPacketHeader(IdSizes().ReferenceTypeIdSize(), id, 0x00, 2, 5);

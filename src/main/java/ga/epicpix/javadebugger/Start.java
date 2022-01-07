@@ -86,6 +86,16 @@ public class Start {
             }
         })));
 
+        dispatcher.register(literal("class").then(argument("class", StringArgumentType.greedyString()).executes(d -> silenceException(d, (debugger) -> {
+            System.out.println("Classes Found:");
+            ArrayList<VMClassInfoData> classList = debugger.ClassesBySignature(StringArgumentType.getString(d, "class"));
+            int maxStatusLength = "[VERIFIED, PREPARED, INITIALIZED]".length();
+            for(VMClassInfoData classInfo : classList) {
+                String status = "[" + classInfo.status().getStatus() + "]";
+                System.out.println(classInfo.referenceTypeId() + " - " + status + " ".repeat(maxStatusLength - status.length()) + " - " + classInfo.refTypeTag());
+            }
+        }))));
+
         dispatcher.register(literal("allthreads").executes(d -> silenceException(d, (debugger) -> {
             System.out.println("All Threads:");
             ArrayList<TypeId> threadIds = debugger.AllThreads();
