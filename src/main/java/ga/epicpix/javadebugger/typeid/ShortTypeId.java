@@ -20,6 +20,7 @@ public final class ShortTypeId extends TypeId {
     }
 
     public String toString() {
+        if(val == 0x0) return "null";
         String hex = Integer.toHexString(Short.toUnsignedInt(val));
         return "0x" + "0".repeat(4 - hex.length()) + hex;
     }

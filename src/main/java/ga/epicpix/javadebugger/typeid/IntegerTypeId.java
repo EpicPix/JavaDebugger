@@ -20,6 +20,7 @@ public final class IntegerTypeId extends TypeId {
     }
 
     public String toString() {
+        if(val == 0x0) return "null";
         String hex = Integer.toHexString(val);
         return "0x" + "0".repeat(8 - hex.length()) + hex;
     }

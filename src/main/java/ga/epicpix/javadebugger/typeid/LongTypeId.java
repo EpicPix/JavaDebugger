@@ -20,6 +20,7 @@ public final class LongTypeId extends TypeId {
     }
 
     public String toString() {
+        if(val == 0x0) return "null";
         String hex = Long.toHexString(val);
         return "0x" + "0".repeat(16 - hex.length()) + hex;
     }
