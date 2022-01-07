@@ -109,6 +109,10 @@ public class Start {
             if(methodList.size() == 0) System.out.println("<no methods found>");
         }))));
 
+        dispatcher.register(literal("superclass").then(argument("typeid", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
+            System.out.println("Superclass: " + debugger.SuperClass(d.getArgument("typeid", TypeId.class)));
+        }))));
+
         dispatcher.register(literal("kill").executes(d -> silenceException(d, (debugger) -> {
             debugger.Exit(0);
             System.exit(0);

@@ -231,6 +231,13 @@ public class Debugger implements IReadWrite {
         return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadString());
     }
 
+    public TypeId SuperClass(TypeId clazz) throws IOException {
+        int id = GetIdAndIncrement();
+        SendPacketHeader(clazz.size(), id, 0x00, 3, 1);
+        WriteTypeId(clazz);
+        return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadTypeId(TypeIdTypes.REFERENCE_TYPE_ID, IdSizes()));
+    }
+
     public TypeId CreateString(String str) throws IOException {
         int id = GetIdAndIncrement();
         SendPacketHeader(4 + str.length(), id, 0x00, 1, 11);
