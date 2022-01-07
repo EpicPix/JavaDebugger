@@ -132,6 +132,10 @@ public class Start {
             System.out.println("Superclass: " + debugger.SuperClass(d.getArgument("typeid", TypeId.class)));
         }))));
 
+        dispatcher.register(literal("signature").then(argument("typeid", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
+            System.out.println("Signature: " + debugger.Signature(d.getArgument("typeid", TypeId.class)));
+        }))));
+
         dispatcher.register(literal("interfaces").then(argument("typeid", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
             System.out.println("Interfaces:");
             ArrayList<TypeId> interfaces = debugger.Interfaces(d.getArgument("typeid", TypeId.class));
