@@ -15,6 +15,7 @@ import ga.epicpix.javadebugger.typeid.TypeIdTypes;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -40,7 +41,9 @@ public class Start {
             return 1;
         } catch(CommandSyntaxException e) {
             throw e;
-        } catch(Exception e) {
+        }catch(EOFException ignored) {
+            return 0;
+        }catch(Exception e) {
             e.printStackTrace();
             return 0;
         }
