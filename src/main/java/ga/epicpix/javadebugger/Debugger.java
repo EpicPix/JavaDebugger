@@ -275,6 +275,20 @@ public class Debugger implements IReadWrite {
         return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadTypeId(TypeIdTypes.REFERENCE_TYPE_ID, IdSizes()));
     }
 
+    public ArrayList<TypeId> Interfaces(TypeId clazz) throws IOException {
+        int id = GetIdAndIncrement();
+        SendPacketHeader(clazz.size(), id, 0x00, 2, 10);
+        WriteTypeId(clazz);
+        return WaitForReply(id, (length, errorCode, input, bytes) -> {
+            int count = input.ReadInt();
+            ArrayList<TypeId> interfaces = new ArrayList<>(count);
+            for(int i = 0; i<count; i++) {
+                interfaces.add(input.ReadTypeId(TypeIdTypes.REFERENCE_TYPE_ID, IdSizes()));
+            }
+            return interfaces;
+        });
+    }
+
     public TypeId CreateString(String str) throws IOException {
         int id = GetIdAndIncrement();
         SendPacketHeader(4 + str.length(), id, 0x00, 1, 11);

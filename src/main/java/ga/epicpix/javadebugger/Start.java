@@ -132,6 +132,15 @@ public class Start {
             System.out.println("Superclass: " + debugger.SuperClass(d.getArgument("typeid", TypeId.class)));
         }))));
 
+        dispatcher.register(literal("interfaces").then(argument("typeid", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
+            System.out.println("Interfaces:");
+            ArrayList<TypeId> interfaces = debugger.Interfaces(d.getArgument("typeid", TypeId.class));
+            for(TypeId interfac : interfaces) {
+                System.out.println(interfac);
+            }
+            if(interfaces.size() == 0) System.out.println("<no interfaces found>");
+        }))));
+
         dispatcher.register(literal("kill").executes(d -> silenceException(d, (debugger) -> {
             debugger.Exit(0);
             System.exit(0);
