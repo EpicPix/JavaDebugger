@@ -5,6 +5,7 @@ import ga.epicpix.javadebugger.typeid.TypeIdTypes;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -345,4 +346,14 @@ public class Debugger implements IReadWrite {
         return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadTypeId(TypeIdTypes.OBJECT_ID, IdSizes()));
     }
 
+    public TypeId NewInstanceArray(TypeId arrayType, int arrayLength) throws IOException {
+        int id = GetIdAndIncrement();
+        SendPacketHeader(arrayType.size() + 4, id, 0x00, 4, 1);
+        WriteTypeId(arrayType);
+        WriteInt(arrayLength);
+        return WaitForReply(id, (length, errorCode, input, bytes) -> {
+            if(input.ReadByte() != '[') System.err.println("Array tag required");
+            return input.ReadTypeId(TypeIdTypes.OBJECT_ID, IdSizes());
+        });
+    }
 }

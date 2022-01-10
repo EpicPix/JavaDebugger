@@ -163,6 +163,12 @@ public class Start {
             System.out.println("Reflected Type: " + reflectedType.typeId() + " - " + reflectedType.referenceType());
         }))));
 
+        dispatcher.register(literal("newarray").then(argument("arraytype", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).then(argument("length", IntegerArgumentType.integer(0)).executes(d -> silenceException(d, (debugger) -> {
+            TypeId arrayType = d.getArgument("arraytype", TypeId.class);
+            int length = IntegerArgumentType.getInteger(d, "length");
+            System.out.println("Array: " + debugger.NewInstanceArray(arrayType, length));
+        })))));
+
         dispatcher.register(literal("setstaticfield")
                 .then(argument("class", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID))
                     .then(argument("field", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID))
