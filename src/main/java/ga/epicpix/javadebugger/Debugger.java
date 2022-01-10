@@ -5,6 +5,7 @@ import ga.epicpix.javadebugger.typeid.TypeIdTypes;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Debugger implements IReadWrite {
@@ -312,6 +313,29 @@ public class Debugger implements IReadWrite {
             }
             return interfaces;
         });
+    }
+
+    public void SetValuesClass(TypeId classId, List<FieldUpdate> fieldUpdates) throws IOException {
+        int id = GetIdAndIncrement();
+        int len = classId.size() + 4;
+        for(FieldUpdate update : fieldUpdates) {
+            len += update.fieldId().size() + update.val().size();
+        }
+        SendPacketHeader(len, id, 0x00, 3, 2);
+        WriteTypeId(classId);
+        WriteInt(fieldUpdates.size());
+        for(FieldUpdate update : fieldUpdates) {
+            WriteTypeId(update.fieldId());
+            update.val().write(this);
+        }
+        WaitForReply(id, (length, errorCode, input, bytes) -> null);
+    }
+
+    public VMReflectedType ReflectedType(TypeId classObjectId) throws IOException {
+        int id = GetIdAndIncrement();
+        SendPacketHeader(classObjectId.size(), id, 0x00, 17, 1);
+        WriteTypeId(classObjectId);
+        return WaitForReply(id, (length, errorCode, input, bytes) -> new VMReflectedType(ReferenceType.getReferenceType(input.ReadByte()), input.ReadTypeId(TypeIdTypes.REFERENCE_TYPE_ID, IdSizes())));
     }
 
     public TypeId CreateString(String str) throws IOException {

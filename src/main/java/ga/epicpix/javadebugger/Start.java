@@ -3,6 +3,7 @@ package ga.epicpix.javadebugger;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.ArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.LongArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
@@ -20,6 +21,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 
@@ -117,7 +119,7 @@ public class Start {
             System.out.println("String Id: " + debugger.CreateString(StringArgumentType.getString(d, "string")));
         }))));
 
-        dispatcher.register(literal("methods").then(argument("typeid", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.OBJECT_ID)).executes(d -> silenceException(d, (debugger) -> {
+        dispatcher.register(literal("methods").then(argument("typeid", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
             System.out.println("Methods:");
             ArrayList<VMMethodInfoData> methodList = debugger.Methods(d.getArgument("typeid", TypeId.class));
             for(VMMethodInfoData methodInfo : methodList) {
@@ -128,7 +130,7 @@ public class Start {
             if(methodList.size() == 0) System.out.println("<no methods found>");
         }))));
 
-        dispatcher.register(literal("fields").then(argument("typeid", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.OBJECT_ID)).executes(d -> silenceException(d, (debugger) -> {
+        dispatcher.register(literal("fields").then(argument("typeid", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
             System.out.println("Fields:");
             ArrayList<VMFieldInfoData> fieldList = debugger.Fields(d.getArgument("typeid", TypeId.class));
             for(VMFieldInfoData fieldInfo : fieldList) {
@@ -155,6 +157,63 @@ public class Start {
             }
             if(interfaces.size() == 0) System.out.println("<no interfaces found>");
         }))));
+
+        dispatcher.register(literal("reflectedtype").then(argument("typeid", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.OBJECT_ID)).executes(d -> silenceException(d, (debugger) -> {
+            VMReflectedType reflectedType = debugger.ReflectedType(d.getArgument("typeid", TypeId.class));
+            System.out.println("Reflected Type: " + reflectedType.typeId() + " - " + reflectedType.referenceType());
+        }))));
+
+        dispatcher.register(literal("setstaticfield")
+                .then(argument("class", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID))
+                    .then(argument("field", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID))
+                            .then(literal("byte")
+                                    .then(argument("byte", IntegerArgumentType.integer(-128, 127)).executes(d -> silenceException(d, (debugger) -> {
+                                        TypeId classId = d.getArgument("class", TypeId.class);
+                                        TypeId fieldId = d.getArgument("field", TypeId.class);
+                                        byte num = (byte) IntegerArgumentType.getInteger(d, "byte");
+                                        UntaggedValue val = new UntaggedValue(num);
+                                        debugger.SetValuesClass(classId, List.of(new FieldUpdate(fieldId, val)));
+                                    }))))
+                            .then(literal("short")
+                                    .then(argument("short", IntegerArgumentType.integer(-32768, 32767)).executes(d -> silenceException(d, (debugger) -> {
+                                        TypeId classId = d.getArgument("class", TypeId.class);
+                                        TypeId fieldId = d.getArgument("field", TypeId.class);
+                                        short num = (short) IntegerArgumentType.getInteger(d, "short");
+                                        UntaggedValue val = new UntaggedValue(num);
+                                        debugger.SetValuesClass(classId, List.of(new FieldUpdate(fieldId, val)));
+                                    }))))
+                            .then(literal("int")
+                                    .then(argument("int", IntegerArgumentType.integer()).executes(d -> silenceException(d, (debugger) -> {
+                                        TypeId classId = d.getArgument("class", TypeId.class);
+                                        TypeId fieldId = d.getArgument("field", TypeId.class);
+                                        int num = IntegerArgumentType.getInteger(d, "int");
+                                        UntaggedValue val = new UntaggedValue(num);
+                                        debugger.SetValuesClass(classId, List.of(new FieldUpdate(fieldId, val)));
+                                    }))))
+                            .then(literal("long")
+                                    .then(argument("long", LongArgumentType.longArg()).executes(d -> silenceException(d, (debugger) -> {
+                                        TypeId classId = d.getArgument("class", TypeId.class);
+                                        TypeId fieldId = d.getArgument("field", TypeId.class);
+                                        long num = LongArgumentType.getLong(d, "long");
+                                        UntaggedValue val = new UntaggedValue(num);
+                                        debugger.SetValuesClass(classId, List.of(new FieldUpdate(fieldId, val)));
+                                    }))))
+                            .then(literal("ref")
+                                    .then(argument("typeId", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
+                                        TypeId classId = d.getArgument("class", TypeId.class);
+                                        TypeId fieldId = d.getArgument("field", TypeId.class);
+                                        TypeId ref = d.getArgument("typeId", TypeId.class);
+                                        UntaggedValue val = new UntaggedValue(ref);
+                                        debugger.SetValuesClass(classId, List.of(new FieldUpdate(fieldId, val)));
+                                    }))))
+                            .then(literal("object")
+                                    .then(argument("typeId", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.OBJECT_ID)).executes(d -> silenceException(d, (debugger) -> {
+                                        TypeId classId = d.getArgument("class", TypeId.class);
+                                        TypeId fieldId = d.getArgument("field", TypeId.class);
+                                        TypeId ref = d.getArgument("typeId", TypeId.class);
+                                        UntaggedValue val = new UntaggedValue(ref);
+                                        debugger.SetValuesClass(classId, List.of(new FieldUpdate(fieldId, val)));
+                                    })))))));
 
         dispatcher.register(literal("kill").executes(d -> silenceException(d, (debugger) -> {
             debugger.Exit(0);
