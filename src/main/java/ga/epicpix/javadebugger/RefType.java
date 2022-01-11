@@ -1,12 +1,12 @@
 package ga.epicpix.javadebugger;
 
-public enum ReferenceType {
+public enum RefType {
 
     CLASS(1), INTERFACE(2), ARRAY(3);
 
     private final int id;
 
-    ReferenceType(int id) {
+    RefType(int id) {
         this.id = id;
     }
 
@@ -14,8 +14,8 @@ public enum ReferenceType {
         return id;
     }
 
-    public static ReferenceType getReferenceType(int id) {
-        for(ReferenceType r : values()) {
+    public static RefType getReferenceType(int id) {
+        for(RefType r : values()) {
             if(r.id == id) {
                 return r;
             }

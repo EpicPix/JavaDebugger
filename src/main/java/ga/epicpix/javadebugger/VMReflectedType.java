@@ -2,4 +2,4 @@ package ga.epicpix.javadebugger;
 
 import ga.epicpix.javadebugger.typeid.TypeId;
 
-public record VMReflectedType(ReferenceType referenceType, TypeId typeId) {}
+public record VMReflectedType(RefType referenceType, TypeId typeId) {}

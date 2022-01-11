@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Scanner;
-import java.util.stream.Collectors;
 
 public class Start {
 
@@ -61,11 +60,11 @@ public class Start {
     public static void registerCommands(CommandDispatcher<Debugger> dispatcher, Debugger deb) throws IOException {
         alias(dispatcher, dispatcher.register(literal("capabilities").executes(d -> silenceException(d, (debugger) -> {
             System.out.println("Capabilities:");
-            debugger.Capabilities().Print();
+            debugger.VirtualMachine.NewCapabilities().Print();
         }))), "caps");
 
         alias(dispatcher, dispatcher.register(literal("version").executes(d -> silenceException(d, (debugger) -> {
-            debugger.Version().Print();
+            debugger.VirtualMachine.Version().Print();
         }))), "ver");
 
         alias(dispatcher, dispatcher.register(literal("quit").executes(d -> silenceException(d, (debugger) -> {
@@ -74,14 +73,14 @@ public class Start {
 
         dispatcher.register(literal("idsizes").executes(d -> silenceException(d, (debugger) -> {
             System.out.println("Id Sizes:");
-            debugger.IdSizes().Print();
+            debugger.VirtualMachine.IdSizes().Print();
         })));
 
         dispatcher.register(literal("allclasses").executes(d -> silenceException(d, (debugger) -> {
             System.out.println("All Loaded Classes:");
-            ArrayList<VMClassInfoData> classList = debugger.AllClasses();
+            ArrayList<VMClassInfoData> classList = debugger.VirtualMachine.AllClasses();
             int maxStatusLength = "[VERIFIED, PREPARED, INITIALIZED]".length();
-            int maxRefTypeLength = ReferenceType.INTERFACE.name().length();
+            int maxRefTypeLength = RefType.INTERFACE.name().length();
             for(VMClassInfoData classInfo : classList) {
                 String status = "[" + classInfo.status().getStatus() + "]";
                 System.out.println(classInfo.referenceTypeId() + " - " + status + " ".repeat(maxStatusLength - status.length()) + " - " + classInfo.refTypeTag() + " ".repeat(maxRefTypeLength - classInfo.refTypeTag().name().length()) + " " + classInfo.signature());
@@ -90,7 +89,7 @@ public class Start {
 
         dispatcher.register(literal("class").then(argument("class", StringArgumentType.greedyString()).executes(d -> silenceException(d, (debugger) -> {
             System.out.println("Classes Found:");
-            ArrayList<VMClassInfoData> classList = debugger.ClassesBySignature(StringArgumentType.getString(d, "class"));
+            ArrayList<VMClassInfoData> classList = debugger.VirtualMachine.ClassesBySignature(StringArgumentType.getString(d, "class"));
             int maxStatusLength = "[VERIFIED, PREPARED, INITIALIZED]".length();
             for(VMClassInfoData classInfo : classList) {
                 String status = "[" + classInfo.status().getStatus() + "]";
@@ -100,28 +99,28 @@ public class Start {
 
         dispatcher.register(literal("allthreads").executes(d -> silenceException(d, (debugger) -> {
             System.out.println("All Threads:");
-            ArrayList<TypeId> threadIds = debugger.AllThreads();
+            ArrayList<TypeId> threadIds = debugger.VirtualMachine.AllThreads();
             for(TypeId threadId : threadIds) {
-                System.out.println(threadId + " - \"" + debugger.ThreadName(threadId) + "\"");
+                System.out.println(threadId + " - \"" + debugger.ThreadReference.Name(threadId) + "\"");
             }
         })));
 
         dispatcher.register(literal("allmodules").executes(d -> silenceException(d, (debugger) -> {
             System.out.println("All Modules:");
-            ArrayList<TypeId> moduleIds = debugger.AllModules();
+            ArrayList<TypeId> moduleIds = debugger.VirtualMachine.AllModules();
             for(TypeId moduleId : moduleIds) {
-                String name = debugger.ModuleName(moduleId);
+                String name = debugger.ModuleReference.Name(moduleId);
                 System.out.println(moduleId + " - " + (name.isEmpty() ? "<unnamed module>" : name));
             }
         })));
 
         dispatcher.register(literal("createstring").then(argument("string", StringArgumentType.string()).executes(d -> silenceException(d, (debugger) -> {
-            System.out.println("String Id: " + debugger.CreateString(StringArgumentType.getString(d, "string")));
+            System.out.println("String Id: " + debugger.VirtualMachine.CreateString(StringArgumentType.getString(d, "string")));
         }))));
 
-        dispatcher.register(literal("methods").then(argument("typeid", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
+        dispatcher.register(literal("methods").then(argument("typeid", TypeIdArgumentType.typeId(deb.VirtualMachine.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
             System.out.println("Methods:");
-            ArrayList<VMMethodInfoData> methodList = debugger.Methods(d.getArgument("typeid", TypeId.class));
+            ArrayList<VMMethodInfoData> methodList = debugger.ReferenceType.Methods(d.getArgument("typeid", TypeId.class));
             for(VMMethodInfoData methodInfo : methodList) {
                 EnumSet<AccessFlags> accessFlags = AccessFlags.getMethodAccessFlags(methodInfo.modBits());
                 String flags = String.join(", ", accessFlags.stream().map(AccessFlags::name).toArray(String[]::new));
@@ -130,9 +129,9 @@ public class Start {
             if(methodList.size() == 0) System.out.println("<no methods found>");
         }))));
 
-        dispatcher.register(literal("fields").then(argument("typeid", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
+        dispatcher.register(literal("fields").then(argument("typeid", TypeIdArgumentType.typeId(deb.VirtualMachine.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
             System.out.println("Fields:");
-            ArrayList<VMFieldInfoData> fieldList = debugger.Fields(d.getArgument("typeid", TypeId.class));
+            ArrayList<VMFieldInfoData> fieldList = debugger.ReferenceType.Fields(d.getArgument("typeid", TypeId.class));
             for(VMFieldInfoData fieldInfo : fieldList) {
                 EnumSet<AccessFlags> accessFlags = AccessFlags.getFieldAccessFlags(fieldInfo.modBits());
                 String flags = String.join(", ", accessFlags.stream().map(AccessFlags::name).toArray(String[]::new));
@@ -141,51 +140,51 @@ public class Start {
             if(fieldList.size() == 0) System.out.println("<no fields found>");
         }))));
 
-        dispatcher.register(literal("superclass").then(argument("typeid", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
-            System.out.println("Superclass: " + debugger.SuperClass(d.getArgument("typeid", TypeId.class)));
+        dispatcher.register(literal("superclass").then(argument("typeid", TypeIdArgumentType.typeId(deb.VirtualMachine.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
+            System.out.println("Superclass: " + debugger.ClassType.SuperClass(d.getArgument("typeid", TypeId.class)));
         }))));
 
-        dispatcher.register(literal("signature").then(argument("typeid", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
-            System.out.println("Signature: " + debugger.Signature(d.getArgument("typeid", TypeId.class)));
+        dispatcher.register(literal("signature").then(argument("typeid", TypeIdArgumentType.typeId(deb.VirtualMachine.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
+            System.out.println("Signature: " + debugger.ReferenceType.Signature(d.getArgument("typeid", TypeId.class)));
         }))));
 
-        dispatcher.register(literal("interfaces").then(argument("typeid", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
+        dispatcher.register(literal("interfaces").then(argument("typeid", TypeIdArgumentType.typeId(deb.VirtualMachine.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
             System.out.println("Interfaces:");
-            ArrayList<TypeId> interfaces = debugger.Interfaces(d.getArgument("typeid", TypeId.class));
+            ArrayList<TypeId> interfaces = debugger.ReferenceType.Interfaces(d.getArgument("typeid", TypeId.class));
             for(TypeId interfac : interfaces) {
                 System.out.println(interfac);
             }
             if(interfaces.size() == 0) System.out.println("<no interfaces found>");
         }))));
 
-        dispatcher.register(literal("reflectedtype").then(argument("typeid", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.OBJECT_ID)).executes(d -> silenceException(d, (debugger) -> {
-            VMReflectedType reflectedType = debugger.ReflectedType(d.getArgument("typeid", TypeId.class));
+        dispatcher.register(literal("reflectedtype").then(argument("typeid", TypeIdArgumentType.typeId(deb.VirtualMachine.IdSizes(), TypeIdTypes.OBJECT_ID)).executes(d -> silenceException(d, (debugger) -> {
+            VMReflectedType reflectedType = debugger.ClassObjectReference.ReflectedType(d.getArgument("typeid", TypeId.class));
             System.out.println("Reflected Type: " + reflectedType.typeId() + " - " + reflectedType.referenceType());
         }))));
 
-        dispatcher.register(literal("modifiers").then(argument("typeid", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
-            System.out.println("Modifiers: " + Integer.toHexString(debugger.Modifiers(d.getArgument("typeid", TypeId.class))));
+        dispatcher.register(literal("modifiers").then(argument("typeid", TypeIdArgumentType.typeId(deb.VirtualMachine.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
+            System.out.println("Modifiers: " + Integer.toHexString(debugger.ReferenceType.Modifiers(d.getArgument("typeid", TypeId.class))));
         }))));
 
-        dispatcher.register(literal("newarray").then(argument("arraytype", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).then(argument("length", IntegerArgumentType.integer(0)).executes(d -> silenceException(d, (debugger) -> {
+        dispatcher.register(literal("newarray").then(argument("arraytype", TypeIdArgumentType.typeId(deb.VirtualMachine.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).then(argument("length", IntegerArgumentType.integer(0)).executes(d -> silenceException(d, (debugger) -> {
             TypeId arrayType = d.getArgument("arraytype", TypeId.class);
             int length = IntegerArgumentType.getInteger(d, "length");
-            System.out.println("Array: " + debugger.NewInstanceArray(arrayType, length));
+            System.out.println("Array: " + debugger.ArrayType.NewInstance(arrayType, length));
         })))));
 
-        dispatcher.register(literal("suspend").executes(d -> silenceException(d, Debugger::Suspend)));
-        dispatcher.register(literal("resume").executes(d -> silenceException(d, Debugger::Resume)));
+        dispatcher.register(literal("suspend").executes(d -> silenceException(d, debbuger -> debbuger.VirtualMachine.Suspend())));
+        dispatcher.register(literal("resume").executes(d -> silenceException(d, debbuger -> debbuger.VirtualMachine.Resume())));
 
         dispatcher.register(literal("setstaticfield")
-                .then(argument("class", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID))
-                    .then(argument("field", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID))
+                .then(argument("class", TypeIdArgumentType.typeId(deb.VirtualMachine.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID))
+                    .then(argument("field", TypeIdArgumentType.typeId(deb.VirtualMachine.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID))
                             .then(literal("byte")
                                     .then(argument("byte", IntegerArgumentType.integer(-128, 127)).executes(d -> silenceException(d, (debugger) -> {
                                         TypeId classId = d.getArgument("class", TypeId.class);
                                         TypeId fieldId = d.getArgument("field", TypeId.class);
                                         byte num = (byte) IntegerArgumentType.getInteger(d, "byte");
                                         UntaggedValue val = new UntaggedValue(num);
-                                        debugger.SetValuesClass(classId, List.of(new FieldUpdate(fieldId, val)));
+                                        debugger.ClassType.SetValues(classId, List.of(new FieldUpdate(fieldId, val)));
                                     }))))
                             .then(literal("short")
                                     .then(argument("short", IntegerArgumentType.integer(-32768, 32767)).executes(d -> silenceException(d, (debugger) -> {
@@ -193,7 +192,7 @@ public class Start {
                                         TypeId fieldId = d.getArgument("field", TypeId.class);
                                         short num = (short) IntegerArgumentType.getInteger(d, "short");
                                         UntaggedValue val = new UntaggedValue(num);
-                                        debugger.SetValuesClass(classId, List.of(new FieldUpdate(fieldId, val)));
+                                        debugger.ClassType.SetValues(classId, List.of(new FieldUpdate(fieldId, val)));
                                     }))))
                             .then(literal("int")
                                     .then(argument("int", IntegerArgumentType.integer()).executes(d -> silenceException(d, (debugger) -> {
@@ -201,7 +200,7 @@ public class Start {
                                         TypeId fieldId = d.getArgument("field", TypeId.class);
                                         int num = IntegerArgumentType.getInteger(d, "int");
                                         UntaggedValue val = new UntaggedValue(num);
-                                        debugger.SetValuesClass(classId, List.of(new FieldUpdate(fieldId, val)));
+                                        debugger.ClassType.SetValues(classId, List.of(new FieldUpdate(fieldId, val)));
                                     }))))
                             .then(literal("long")
                                     .then(argument("long", LongArgumentType.longArg()).executes(d -> silenceException(d, (debugger) -> {
@@ -209,30 +208,30 @@ public class Start {
                                         TypeId fieldId = d.getArgument("field", TypeId.class);
                                         long num = LongArgumentType.getLong(d, "long");
                                         UntaggedValue val = new UntaggedValue(num);
-                                        debugger.SetValuesClass(classId, List.of(new FieldUpdate(fieldId, val)));
+                                        debugger.ClassType.SetValues(classId, List.of(new FieldUpdate(fieldId, val)));
                                     }))))
                             .then(literal("ref")
-                                    .then(argument("typeId", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
+                                    .then(argument("typeId", TypeIdArgumentType.typeId(deb.VirtualMachine.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
                                         TypeId classId = d.getArgument("class", TypeId.class);
                                         TypeId fieldId = d.getArgument("field", TypeId.class);
                                         TypeId ref = d.getArgument("typeId", TypeId.class);
                                         UntaggedValue val = new UntaggedValue(ref);
-                                        debugger.SetValuesClass(classId, List.of(new FieldUpdate(fieldId, val)));
+                                        debugger.ClassType.SetValues(classId, List.of(new FieldUpdate(fieldId, val)));
                                     }))))
                             .then(literal("object")
-                                    .then(argument("typeId", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.OBJECT_ID)).executes(d -> silenceException(d, (debugger) -> {
+                                    .then(argument("typeId", TypeIdArgumentType.typeId(deb.VirtualMachine.IdSizes(), TypeIdTypes.OBJECT_ID)).executes(d -> silenceException(d, (debugger) -> {
                                         TypeId classId = d.getArgument("class", TypeId.class);
                                         TypeId fieldId = d.getArgument("field", TypeId.class);
                                         TypeId ref = d.getArgument("typeId", TypeId.class);
                                         UntaggedValue val = new UntaggedValue(ref);
-                                        debugger.SetValuesClass(classId, List.of(new FieldUpdate(fieldId, val)));
+                                        debugger.ClassType.SetValues(classId, List.of(new FieldUpdate(fieldId, val)));
                                     })))))));
 
         dispatcher.register(literal("kill").executes(d -> silenceException(d, (debugger) -> {
-            debugger.Exit(0);
+            debugger.VirtualMachine.Exit(0);
             System.exit(0);
         })).then(argument("exitCode", IntegerArgumentType.integer(0)).executes(d -> silenceException(d, (debugger) -> {
-            debugger.Exit(IntegerArgumentType.getInteger(d, "exitCode"));
+            debugger.VirtualMachine.Exit(IntegerArgumentType.getInteger(d, "exitCode"));
             System.exit(0);
         }))));
     }

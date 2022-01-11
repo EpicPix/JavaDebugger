@@ -5,7 +5,6 @@ import ga.epicpix.javadebugger.typeid.TypeIdTypes;
 
 import java.io.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -167,224 +166,400 @@ public class Debugger implements IReadWrite {
         return id;
     }
 
-    public VMCapabilities Capabilities() throws IOException {
-        if(capabilities != null) return capabilities;
-        int id = SendRequestPacket(1, 17);
-        return capabilities = WaitForReply(id, (length, errorCode, input, bytes) -> {
-            int caps = 0;
-            for(int i = 0; i<32; i++) caps |= input.ReadByte() << i;
-            return new VMCapabilities(caps);
-        });
-    }
+    public final VirtualMachine VirtualMachine = new VirtualMachine();
+    public final ReferenceType ReferenceType = new ReferenceType();
+    public final ClassType ClassType = new ClassType();
+    public final ArrayType ArrayType = new ArrayType();
+    public final InterfaceType InterfaceType = new InterfaceType();
+    public final Method Method = new Method();
+    public final Field Field = new Field();
+    public final ObjectReference ObjectReference = new ObjectReference();
+    public final StringReference StringReference = new StringReference();
+    public final ThreadReference ThreadReference = new ThreadReference();
+    public final ThreadGroupReference ThreadGroupReference = new ThreadGroupReference();
+    public final ArrayReference ArrayReference = new ArrayReference();
+    public final ClassLoaderReference ClassLoaderReference = new ClassLoaderReference();
+    public final EventRequest EventRequest = new EventRequest();
+    public final StackFrame StackFrame = new StackFrame();
+    public final ClassObjectReference ClassObjectReference = new ClassObjectReference();
+    public final ModuleReference ModuleReference = new ModuleReference();
 
-    public VMVersion Version() throws IOException {
-        if(version != null) return version;
-        int id = SendRequestPacket(1, 1);
-        return version = WaitForReply(id, (length, errorCode, input, bytes) -> new VMVersion(input.ReadString(), input.ReadInt(), input.ReadInt(), input.ReadString(), input.ReadString()));
-    }
 
-    public VMIdSizes IdSizes() throws IOException {
-        if(idSizes != null) return idSizes;
-        int id = SendRequestPacket(1, 7);
-        return idSizes = WaitForReply(id, (length, errorCode, input, bytes) -> new VMIdSizes(input.ReadInt(), input.ReadInt(), input.ReadInt(), input.ReadInt(), input.ReadInt()));
-    }
+    public class VirtualMachine {
 
-    public void Exit(int exitCode) throws IOException {
-        StartRequestPacket(1, 10);
-        WriteInt(exitCode);
-        FinishPacket();
-        if(output instanceof DataOutputStream out) out.close();
-        if(input instanceof DataInputStream in) in.close();
-    }
-
-    public ArrayList<VMClassInfoData> AllClasses() throws IOException {
-        int id = SendRequestPacket(1, 3);
-        return WaitForReply(id, (length, errorCode, input, bytes) -> {
-            int classes = input.ReadInt();
-            ArrayList<VMClassInfoData> classList = new ArrayList<>(classes);
-            for(int i = 0; i<classes; i++) {
-                ReferenceType refTypeTag = ReferenceType.getReferenceType(input.ReadByte());
-                TypeId typeId = input.ReadTypeId(TypeIdTypes.REFERENCE_TYPE_ID, IdSizes());
-                String signature = input.ReadString();
-                ClassLoadStatus status = new ClassLoadStatus(input.ReadInt());
-                classList.add(new VMClassInfoData(refTypeTag, typeId, signature, status));
-            }
-            return classList;
-        });
-    }
-
-    public ArrayList<VMClassInfoData> ClassesBySignature(String clazz) throws IOException {
-        int id = StartRequestPacket(1, 2);
-        WriteString(clazz);
-        FinishPacket();
-        return WaitForReply(id, (length, errorCode, input, bytes) -> {
-            int classes = input.ReadInt();
-            ArrayList<VMClassInfoData> classList = new ArrayList<>(classes);
-            for(int i = 0; i<classes; i++) {
-                ReferenceType refTypeTag = ReferenceType.getReferenceType(input.ReadByte());
-                TypeId typeId = input.ReadTypeId(TypeIdTypes.REFERENCE_TYPE_ID, IdSizes());
-                ClassLoadStatus status = new ClassLoadStatus(input.ReadInt());
-                classList.add(new VMClassInfoData(refTypeTag, typeId, clazz, status));
-            }
-            return classList;
-        });
-    }
-
-    public ArrayList<VMMethodInfoData> Methods(TypeId referenceId) throws IOException {
-        int id = StartRequestPacket(2, 5);
-        WriteTypeId(referenceId);
-        FinishPacket();
-        return WaitForReply(id, (length, errorCode, input, bytes) -> {
-            int methods = input.ReadInt();
-            ArrayList<VMMethodInfoData> methodList = new ArrayList<>(methods);
-            for(int i = 0; i<methods; i++) {
-                TypeId typeId = input.ReadTypeId(TypeIdTypes.REFERENCE_TYPE_ID, IdSizes());
-                String name = input.ReadString();
-                String signature = input.ReadString();
-                int modBits = input.ReadInt();
-                methodList.add(new VMMethodInfoData(typeId, name, signature, modBits));
-            }
-            return methodList;
-        });
-    }
-
-    public ArrayList<VMFieldInfoData> Fields(TypeId referenceId) throws IOException {
-        int id = StartRequestPacket(2, 4);
-        WriteTypeId(referenceId);
-        FinishPacket();
-        return WaitForReply(id, (length, errorCode, input, bytes) -> {
-            int fields = input.ReadInt();
-            ArrayList<VMFieldInfoData> fieldList = new ArrayList<>(fields);
-            for(int i = 0; i<fields; i++) {
-                TypeId typeId = input.ReadTypeId(TypeIdTypes.REFERENCE_TYPE_ID, IdSizes());
-                String name = input.ReadString();
-                String signature = input.ReadString();
-                int modBits = input.ReadInt();
-                fieldList.add(new VMFieldInfoData(typeId, name, signature, modBits));
-            }
-            return fieldList;
-        });
-    }
-
-    public ArrayList<TypeId> AllThreads() throws IOException {
-        int id = SendRequestPacket(1, 4);
-        return WaitForReply(id, (length, errorCode, input, bytes) -> {
-            int threads = input.ReadInt();
-            ArrayList<TypeId> threadIds = new ArrayList<>(threads);
-            for(int i = 0; i<threads; i++) {
-                TypeId typeId = input.ReadTypeId(TypeIdTypes.OBJECT_ID, IdSizes());
-                threadIds.add(typeId);
-            }
-            return threadIds;
-        });
-    }
-    public ArrayList<TypeId> AllModules() throws IOException {
-        int id = SendRequestPacket(1, 22);
-        return WaitForReply(id, (length, errorCode, input, bytes) -> {
-            int threads = input.ReadInt();
-            ArrayList<TypeId> threadIds = new ArrayList<>(threads);
-            for(int i = 0; i<threads; i++) {
-                TypeId typeId = input.ReadTypeId(TypeIdTypes.OBJECT_ID, IdSizes());
-                threadIds.add(typeId);
-            }
-            return threadIds;
-        });
-    }
-
-    public String ThreadName(TypeId threadId) throws IOException {
-        int id = StartRequestPacket(11, 1);
-        WriteTypeId(threadId);
-        FinishPacket();
-        return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadString());
-    }
-
-    public String ModuleName(TypeId threadId) throws IOException {
-        int id = StartRequestPacket(18, 1);
-        WriteTypeId(threadId);
-        FinishPacket();
-        return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadString());
-    }
-
-    public TypeId SuperClass(TypeId clazz) throws IOException {
-        int id = StartRequestPacket(3, 1);
-        WriteTypeId(clazz);
-        FinishPacket();
-        return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadTypeId(TypeIdTypes.REFERENCE_TYPE_ID, IdSizes()));
-    }
-
-    public String Signature(TypeId clazz) throws IOException {
-        int id = StartRequestPacket(2, 1);
-        WriteTypeId(clazz);
-        FinishPacket();
-        return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadString());
-    }
-
-    public ArrayList<TypeId> Interfaces(TypeId clazz) throws IOException {
-        int id = StartRequestPacket(2, 10);
-        WriteTypeId(clazz);
-        FinishPacket();
-        return WaitForReply(id, (length, errorCode, input, bytes) -> {
-            int count = input.ReadInt();
-            ArrayList<TypeId> interfaces = new ArrayList<>(count);
-            for(int i = 0; i<count; i++) {
-                interfaces.add(input.ReadTypeId(TypeIdTypes.REFERENCE_TYPE_ID, IdSizes()));
-            }
-            return interfaces;
-        });
-    }
-
-    public void SetValuesClass(TypeId classId, List<FieldUpdate> fieldUpdates) throws IOException {
-        int id = StartRequestPacket(3, 2);
-        WriteTypeId(classId);
-        WriteInt(fieldUpdates.size());
-        for(FieldUpdate update : fieldUpdates) {
-            WriteTypeId(update.fieldId());
-            update.val().write(this);
+        public VMVersion Version() throws IOException {
+            if(version != null) return version;
+            int id = SendRequestPacket(1, 1);
+            return version = WaitForReply(id, (length, errorCode, input, bytes) -> new VMVersion(input.ReadString(), input.ReadInt(), input.ReadInt(), input.ReadString(), input.ReadString()));
         }
-        FinishPacket();
-        WaitForReply(id, (length, errorCode, input, bytes) -> null);
+
+        public ArrayList<VMClassInfoData> ClassesBySignature(String clazz) throws IOException {
+            int id = StartRequestPacket(1, 2);
+            WriteString(clazz);
+            FinishPacket();
+            return WaitForReply(id, (length, errorCode, input, bytes) -> {
+                int classes = input.ReadInt();
+                ArrayList<VMClassInfoData> classList = new ArrayList<>(classes);
+                for(int i = 0; i<classes; i++) {
+                    RefType refTypeTag = RefType.getReferenceType(input.ReadByte());
+                    TypeId typeId = input.ReadTypeId(TypeIdTypes.REFERENCE_TYPE_ID, VirtualMachine.IdSizes());
+                    ClassLoadStatus status = new ClassLoadStatus(input.ReadInt());
+                    classList.add(new VMClassInfoData(refTypeTag, typeId, clazz, status));
+                }
+                return classList;
+            });
+        }
+
+        public ArrayList<VMClassInfoData> AllClasses() throws IOException {
+            int id = SendRequestPacket(1, 3);
+            return WaitForReply(id, (length, errorCode, input, bytes) -> {
+                int classes = input.ReadInt();
+                ArrayList<VMClassInfoData> classList = new ArrayList<>(classes);
+                for(int i = 0; i<classes; i++) {
+                    RefType refTypeTag = RefType.getReferenceType(input.ReadByte());
+                    TypeId typeId = input.ReadTypeId(TypeIdTypes.REFERENCE_TYPE_ID, VirtualMachine.IdSizes());
+                    String signature = input.ReadString();
+                    ClassLoadStatus status = new ClassLoadStatus(input.ReadInt());
+                    classList.add(new VMClassInfoData(refTypeTag, typeId, signature, status));
+                }
+                return classList;
+            });
+        }
+
+        public ArrayList<TypeId> AllThreads() throws IOException {
+            int id = SendRequestPacket(1, 4);
+            return WaitForReply(id, (length, errorCode, input, bytes) -> {
+                int threads = input.ReadInt();
+                ArrayList<TypeId> threadIds = new ArrayList<>(threads);
+                for(int i = 0; i<threads; i++) {
+                    TypeId typeId = input.ReadTypeId(TypeIdTypes.OBJECT_ID, VirtualMachine.IdSizes());
+                    threadIds.add(typeId);
+                }
+                return threadIds;
+            });
+        }
+
+        // TopLevelThreadGroups (5)
+        // Dispose (6)
+
+        public VMIdSizes IdSizes() throws IOException {
+            if(idSizes != null) return idSizes;
+            int id = SendRequestPacket(1, 7);
+            return idSizes = WaitForReply(id, (length, errorCode, input, bytes) -> new VMIdSizes(input.ReadInt(), input.ReadInt(), input.ReadInt(), input.ReadInt(), input.ReadInt()));
+        }
+
+        public void Suspend() throws IOException {
+            int id = SendRequestPacket(1, 8);
+            WaitForReply(id, (length, errorCode, input, bytes) -> null);
+        }
+
+        public void Resume() throws IOException {
+            int id = SendRequestPacket(1, 9);
+            WaitForReply(id, (length, errorCode, input, bytes) -> null);
+        }
+
+        public void Exit(int exitCode) throws IOException {
+            StartRequestPacket(1, 10);
+            WriteInt(exitCode);
+            FinishPacket();
+            if(output instanceof DataOutputStream out) out.close();
+            if(input instanceof DataInputStream in) in.close();
+        }
+
+        public TypeId CreateString(String str) throws IOException {
+            int id = StartRequestPacket(1, 11);
+            WriteString(str);
+            FinishPacket();
+            return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadTypeId(TypeIdTypes.OBJECT_ID, VirtualMachine.IdSizes()));
+        }
+
+        // Capabilities (12)
+        // ClassPaths (13)
+        // DisposeObjects (14)
+        // HoldEvents (15)
+        // ReleaseEvents (16)
+
+        public VMCapabilities NewCapabilities() throws IOException {
+            if(capabilities != null) return capabilities;
+            int id = SendRequestPacket(1, 17);
+            return capabilities = WaitForReply(id, (length, errorCode, input, bytes) -> {
+                int caps = 0;
+                for(int i = 0; i<32; i++) caps |= input.ReadByte() << i;
+                return new VMCapabilities(caps);
+            });
+        }
+
+        // RedefineClasses (18)
+        // SetDefaultStratum (19)
+        // AllClassesWithGeneric (20)
+
+        public ArrayList<TypeId> AllModules() throws IOException {
+            int id = SendRequestPacket(1, 22);
+            return WaitForReply(id, (length, errorCode, input, bytes) -> {
+                int threads = input.ReadInt();
+                ArrayList<TypeId> threadIds = new ArrayList<>(threads);
+                for(int i = 0; i<threads; i++) {
+                    TypeId typeId = input.ReadTypeId(TypeIdTypes.OBJECT_ID, VirtualMachine.IdSizes());
+                    threadIds.add(typeId);
+                }
+                return threadIds;
+            });
+        }
+
     }
 
-    public VMReflectedType ReflectedType(TypeId classObjectId) throws IOException {
-        int id = StartRequestPacket(17, 1);
-        WriteTypeId(classObjectId);
-        FinishPacket();
-        return WaitForReply(id, (length, errorCode, input, bytes) -> new VMReflectedType(ReferenceType.getReferenceType(input.ReadByte()), input.ReadTypeId(TypeIdTypes.REFERENCE_TYPE_ID, IdSizes())));
+    public class ReferenceType {
+
+        public String Signature(TypeId clazz) throws IOException {
+            int id = StartRequestPacket(2, 1);
+            WriteTypeId(clazz);
+            FinishPacket();
+            return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadString());
+        }
+
+        // ClassLoader (2)
+
+        public int Modifiers(TypeId refType) throws IOException {
+            int id = StartRequestPacket(2, 3);
+            WriteTypeId(refType);
+            FinishPacket();
+            return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadInt());
+        }
+
+        public ArrayList<VMFieldInfoData> Fields(TypeId referenceId) throws IOException {
+            int id = StartRequestPacket(2, 4);
+            WriteTypeId(referenceId);
+            FinishPacket();
+            return WaitForReply(id, (length, errorCode, input, bytes) -> {
+                int fields = input.ReadInt();
+                ArrayList<VMFieldInfoData> fieldList = new ArrayList<>(fields);
+                for(int i = 0; i<fields; i++) {
+                    TypeId typeId = input.ReadTypeId(TypeIdTypes.REFERENCE_TYPE_ID, VirtualMachine.IdSizes());
+                    String name = input.ReadString();
+                    String signature = input.ReadString();
+                    int modBits = input.ReadInt();
+                    fieldList.add(new VMFieldInfoData(typeId, name, signature, modBits));
+                }
+                return fieldList;
+            });
+        }
+
+        public ArrayList<VMMethodInfoData> Methods(TypeId referenceId) throws IOException {
+            int id = StartRequestPacket(2, 5);
+            WriteTypeId(referenceId);
+            FinishPacket();
+            return WaitForReply(id, (length, errorCode, input, bytes) -> {
+                int methods = input.ReadInt();
+                ArrayList<VMMethodInfoData> methodList = new ArrayList<>(methods);
+                for(int i = 0; i<methods; i++) {
+                    TypeId typeId = input.ReadTypeId(TypeIdTypes.REFERENCE_TYPE_ID, VirtualMachine.IdSizes());
+                    String name = input.ReadString();
+                    String signature = input.ReadString();
+                    int modBits = input.ReadInt();
+                    methodList.add(new VMMethodInfoData(typeId, name, signature, modBits));
+                }
+                return methodList;
+            });
+        }
+
+        // GetValues (6)
+        // SourceFile (7)
+        // NestedTypes (8)
+        // Status (9)
+
+        public ArrayList<TypeId> Interfaces(TypeId clazz) throws IOException {
+            int id = StartRequestPacket(2, 10);
+            WriteTypeId(clazz);
+            FinishPacket();
+            return WaitForReply(id, (length, errorCode, input, bytes) -> {
+                int count = input.ReadInt();
+                ArrayList<TypeId> interfaces = new ArrayList<>(count);
+                for(int i = 0; i<count; i++) {
+                    interfaces.add(input.ReadTypeId(TypeIdTypes.REFERENCE_TYPE_ID, VirtualMachine.IdSizes()));
+                }
+                return interfaces;
+            });
+        }
+
+        // ClassObject (11)
+        // SourceDebugExtension (12)
+        // SignatureWithGeneric (13)
+        // FieldsWithGeneric (14)
+        // MethodsWithGeneric (15)
+        // Instances (16)
+        // ClassFileVersion (17)
+        // ConstantPool (18)
+        // Module (19)
+
     }
 
-    public TypeId CreateString(String str) throws IOException {
-        int id = StartRequestPacket(1, 11);
-        WriteString(str);
-        FinishPacket();
-        return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadTypeId(TypeIdTypes.OBJECT_ID, IdSizes()));
+    public class ClassType {
+
+        public TypeId SuperClass(TypeId clazz) throws IOException {
+            int id = StartRequestPacket(3, 1);
+            WriteTypeId(clazz);
+            FinishPacket();
+            return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadTypeId(TypeIdTypes.REFERENCE_TYPE_ID, VirtualMachine.IdSizes()));
+        }
+
+        public void SetValues(TypeId classId, List<FieldUpdate> fieldUpdates) throws IOException {
+            int id = StartRequestPacket(3, 2);
+            WriteTypeId(classId);
+            WriteInt(fieldUpdates.size());
+            for(FieldUpdate update : fieldUpdates) {
+                WriteTypeId(update.fieldId());
+                update.val().write(Debugger.this);
+            }
+            FinishPacket();
+            WaitForReply(id, (length, errorCode, input, bytes) -> null);
+        }
+
+        // InvokeMethod (3)
+        // NewInstance (4)
+
     }
 
-    public TypeId NewInstanceArray(TypeId arrayType, int arrayLength) throws IOException {
-        int id = StartRequestPacket(4, 1);
-        WriteTypeId(arrayType);
-        WriteInt(arrayLength);
-        FinishPacket();
-        return WaitForReply(id, (length, errorCode, input, bytes) -> {
-            if(input.ReadByte() != '[') System.err.println("Array tag required");
-            return input.ReadTypeId(TypeIdTypes.OBJECT_ID, IdSizes());
-        });
+    public class ArrayType {
+
+        public TypeId NewInstance(TypeId arrayType, int arrayLength) throws IOException {
+            int id = StartRequestPacket(4, 1);
+            WriteTypeId(arrayType);
+            WriteInt(arrayLength);
+            FinishPacket();
+            return WaitForReply(id, (length, errorCode, input, bytes) -> {
+                if(input.ReadByte() != '[') System.err.println("Array tag required");
+                return input.ReadTypeId(TypeIdTypes.OBJECT_ID, VirtualMachine.IdSizes());
+            });
+        }
+
     }
 
-    public void Suspend() throws IOException {
-        int id = SendRequestPacket(1, 5);
-        WaitForReply(id, (length, errorCode, input, bytes) -> null);
+    public class InterfaceType {
+
+        // InvokeMethod (1)
+
     }
 
-    public void Resume() throws IOException {
-        int id = SendRequestPacket(1, 9);
-        WaitForReply(id, (length, errorCode, input, bytes) -> null);
+    public class Method {
+
+        // LineTable (1)
+        // VariableTable (2)
+        // Bytecodes (3)
+        // IsObsolete (4)
+        // VariableTableWithGeneric (5)
+
     }
 
-    public int Modifiers(TypeId refType) throws IOException {
-        int id = StartRequestPacket(2, 3);
-        WriteTypeId(refType);
-        FinishPacket();
-        return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadInt());
+    public class Field {
+
+    }
+
+    public class ObjectReference {
+
+        // ReferenceType (1)
+        // GetValues (2)
+        // SetValues (3)
+        // MonitorInfo (5)
+        // InvokeMethod (6)
+        // DisableCollection (7)
+        // EnableCollection (8)
+        // IsCollected (9)
+        // ReferringObjects (10)
+
+    }
+
+    public class StringReference {
+
+        // Value (1)
+
+    }
+
+    public class ThreadReference {
+
+        public String Name(TypeId threadId) throws IOException {
+            int id = StartRequestPacket(11, 1);
+            WriteTypeId(threadId);
+            FinishPacket();
+            return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadString());
+        }
+
+        // Suspend (2)
+        // Resume (3)
+        // Status (4)
+        // ThreadGroup (5)
+        // Frames (6)
+        // FrameCount (7)
+        // OwnedMonitors (8)
+        // CurrentContendedMonitor (9)
+        // Step (10)
+        // Interrupt (11)
+        // SuspendCount (12)
+        // OwnedMonitorsStackDepthInfo (13)
+        // ForceEarlyReturn (14)
+
+    }
+
+    public class ThreadGroupReference {
+
+        // Name (1)
+        // Parent (2)
+        // Children (3)
+
+    }
+
+    public class ArrayReference {
+
+        // Length (1)
+        // GetValues (2)
+        // SetValues (3)
+
+    }
+
+    public class ClassLoaderReference {
+
+        // VisibleClasses (1)
+
+    }
+
+    public class EventRequest {
+
+        // Set (1)
+        // Clear (2)
+        // ClearAllBreakpoints (3)
+
+    }
+
+    public class StackFrame {
+
+        // GetValues (1)
+        // SetValues (2)
+        // ThisObject (3)
+        // PopFrames (4)
+
+    }
+
+    public class ClassObjectReference {
+
+        public VMReflectedType ReflectedType(TypeId classObjectId) throws IOException {
+            int id = StartRequestPacket(17, 1);
+            WriteTypeId(classObjectId);
+            FinishPacket();
+            return WaitForReply(id, (length, errorCode, input, bytes) -> new VMReflectedType(RefType.getReferenceType(input.ReadByte()), input.ReadTypeId(TypeIdTypes.REFERENCE_TYPE_ID, VirtualMachine.IdSizes())));
+        }
+
+    }
+
+    public class ModuleReference {
+
+        public String Name(TypeId threadId) throws IOException {
+            int id = StartRequestPacket(18, 1);
+            WriteTypeId(threadId);
+            FinishPacket();
+            return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadString());
+        }
+
+        // ClassLoader (2)
+
     }
 
 }
