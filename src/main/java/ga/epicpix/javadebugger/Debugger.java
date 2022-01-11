@@ -21,6 +21,8 @@ public class Debugger implements IReadWrite {
     private VMVersion version;
     private VMIdSizes idSizes;
 
+    private final ConcurrentHashMap<Thread, PacketData> packetCreations = new ConcurrentHashMap<>();
+
     public Debugger(DataOutput output, DataInput input) {
         this.output = output;
         this.input = input;
@@ -63,23 +65,33 @@ public class Debugger implements IReadWrite {
     }
 
     public void WriteBytes(byte[] b, int off, int len) throws IOException {
-        output.write(b, off, len);
+        PacketData data = packetCreations.get(Thread.currentThread());
+        if(data == null) output.write(b, off, len);
+        else data.WriteBytes(b, off, len);
     }
 
     public void WriteByte(byte b) throws IOException {
-        output.write(b);
+        PacketData data = packetCreations.get(Thread.currentThread());
+        if(data == null) output.write(b);
+        else data.WriteByte(b);
     }
 
     public void WriteShort(short s) throws IOException {
-        output.writeShort(s);
+        PacketData data = packetCreations.get(Thread.currentThread());
+        if(data == null) output.writeShort(s);
+        else data.WriteShort(s);
     }
 
     public void WriteInt(int i) throws IOException {
-        output.writeInt(i);
+        PacketData data = packetCreations.get(Thread.currentThread());
+        if(data == null) output.writeInt(i);
+        else data.WriteInt(i);
     }
 
     public void WriteLong(long l) throws IOException {
-        output.writeLong(l);
+        PacketData data = packetCreations.get(Thread.currentThread());
+        if(data == null) output.writeLong(l);
+        else data.WriteLong(l);
     }
 
     public byte[] ReadBytes(int bufSize) throws IOException {
@@ -137,18 +149,27 @@ public class Debugger implements IReadWrite {
         return true;
     }
 
-    public void SendPacketHeader(int length, int id, int flags, int commandSet, int command) throws IOException {
-        WriteInt(length + 11);
-        WriteInt(id);
-        WriteByte((byte) flags);
-        WriteByte((byte) commandSet);
-        WriteByte((byte) command);
+    public int StartRequestPacket(int commandSet, int command) throws IOException {
+        int id = GetIdAndIncrement();
+        PacketData data = new PacketData(id, commandSet, command);
+        packetCreations.put(Thread.currentThread(), data);
+        return id;
+    }
+
+    public void FinishPacket() throws IOException {
+        PacketData data = packetCreations.remove(Thread.currentThread());
+        WriteBytes(data.finish());
+    }
+
+    public int SendRequestPacket(int commandSet, int command) throws IOException {
+        int id = StartRequestPacket(commandSet, command);
+        FinishPacket();
+        return id;
     }
 
     public VMCapabilities Capabilities() throws IOException {
         if(capabilities != null) return capabilities;
-        int id = GetIdAndIncrement();
-        SendPacketHeader(0, id, 0x00, 1, 17);
+        int id = SendRequestPacket(1, 17);
         return capabilities = WaitForReply(id, (length, errorCode, input, bytes) -> {
             int caps = 0;
             for(int i = 0; i<32; i++) caps |= input.ReadByte() << i;
@@ -158,28 +179,26 @@ public class Debugger implements IReadWrite {
 
     public VMVersion Version() throws IOException {
         if(version != null) return version;
-        int id = GetIdAndIncrement();
-        SendPacketHeader(0, id, 0x00, 1, 1);
+        int id = SendRequestPacket(1, 1);
         return version = WaitForReply(id, (length, errorCode, input, bytes) -> new VMVersion(input.ReadString(), input.ReadInt(), input.ReadInt(), input.ReadString(), input.ReadString()));
     }
 
     public VMIdSizes IdSizes() throws IOException {
         if(idSizes != null) return idSizes;
-        int id = GetIdAndIncrement();
-        SendPacketHeader(0, id, 0x00, 1, 7);
+        int id = SendRequestPacket(1, 7);
         return idSizes = WaitForReply(id, (length, errorCode, input, bytes) -> new VMIdSizes(input.ReadInt(), input.ReadInt(), input.ReadInt(), input.ReadInt(), input.ReadInt()));
     }
 
     public void Exit(int exitCode) throws IOException {
-        SendPacketHeader(4, GetIdAndIncrement(), 0x00, 1, 10);
+        StartRequestPacket(1, 10);
         WriteInt(exitCode);
+        FinishPacket();
         if(output instanceof DataOutputStream out) out.close();
         if(input instanceof DataInputStream in) in.close();
     }
 
     public ArrayList<VMClassInfoData> AllClasses() throws IOException {
-        int id = GetIdAndIncrement();
-        SendPacketHeader(0, id, 0x00, 1, 3);
+        int id = SendRequestPacket(1, 3);
         return WaitForReply(id, (length, errorCode, input, bytes) -> {
             int classes = input.ReadInt();
             ArrayList<VMClassInfoData> classList = new ArrayList<>(classes);
@@ -195,9 +214,9 @@ public class Debugger implements IReadWrite {
     }
 
     public ArrayList<VMClassInfoData> ClassesBySignature(String clazz) throws IOException {
-        int id = GetIdAndIncrement();
-        SendPacketHeader(4 + clazz.getBytes().length, id, 0x00, 1, 2);
+        int id = StartRequestPacket(1, 2);
         WriteString(clazz);
+        FinishPacket();
         return WaitForReply(id, (length, errorCode, input, bytes) -> {
             int classes = input.ReadInt();
             ArrayList<VMClassInfoData> classList = new ArrayList<>(classes);
@@ -212,9 +231,9 @@ public class Debugger implements IReadWrite {
     }
 
     public ArrayList<VMMethodInfoData> Methods(TypeId referenceId) throws IOException {
-        int id = GetIdAndIncrement();
-        SendPacketHeader(IdSizes().ReferenceTypeIdSize(), id, 0x00, 2, 5);
+        int id = StartRequestPacket(2, 5);
         WriteTypeId(referenceId);
+        FinishPacket();
         return WaitForReply(id, (length, errorCode, input, bytes) -> {
             int methods = input.ReadInt();
             ArrayList<VMMethodInfoData> methodList = new ArrayList<>(methods);
@@ -230,9 +249,9 @@ public class Debugger implements IReadWrite {
     }
 
     public ArrayList<VMFieldInfoData> Fields(TypeId referenceId) throws IOException {
-        int id = GetIdAndIncrement();
-        SendPacketHeader(IdSizes().ReferenceTypeIdSize(), id, 0x00, 2, 4);
+        int id = StartRequestPacket(2, 4);
         WriteTypeId(referenceId);
+        FinishPacket();
         return WaitForReply(id, (length, errorCode, input, bytes) -> {
             int fields = input.ReadInt();
             ArrayList<VMFieldInfoData> fieldList = new ArrayList<>(fields);
@@ -248,8 +267,7 @@ public class Debugger implements IReadWrite {
     }
 
     public ArrayList<TypeId> AllThreads() throws IOException {
-        int id = GetIdAndIncrement();
-        SendPacketHeader(0, id, 0x00, 1, 4);
+        int id = SendRequestPacket(1, 4);
         return WaitForReply(id, (length, errorCode, input, bytes) -> {
             int threads = input.ReadInt();
             ArrayList<TypeId> threadIds = new ArrayList<>(threads);
@@ -261,8 +279,7 @@ public class Debugger implements IReadWrite {
         });
     }
     public ArrayList<TypeId> AllModules() throws IOException {
-        int id = GetIdAndIncrement();
-        SendPacketHeader(0, id, 0x00, 1, 22);
+        int id = SendRequestPacket(1, 22);
         return WaitForReply(id, (length, errorCode, input, bytes) -> {
             int threads = input.ReadInt();
             ArrayList<TypeId> threadIds = new ArrayList<>(threads);
@@ -275,37 +292,37 @@ public class Debugger implements IReadWrite {
     }
 
     public String ThreadName(TypeId threadId) throws IOException {
-        int id = GetIdAndIncrement();
-        SendPacketHeader(threadId.size(), id, 0x00, 11, 1);
+        int id = StartRequestPacket(11, 1);
         WriteTypeId(threadId);
+        FinishPacket();
         return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadString());
     }
 
     public String ModuleName(TypeId threadId) throws IOException {
-        int id = GetIdAndIncrement();
-        SendPacketHeader(threadId.size(), id, 0x00, 18, 1);
+        int id = StartRequestPacket(18, 1);
         WriteTypeId(threadId);
+        FinishPacket();
         return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadString());
     }
 
     public TypeId SuperClass(TypeId clazz) throws IOException {
-        int id = GetIdAndIncrement();
-        SendPacketHeader(clazz.size(), id, 0x00, 3, 1);
+        int id = StartRequestPacket(3, 1);
         WriteTypeId(clazz);
+        FinishPacket();
         return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadTypeId(TypeIdTypes.REFERENCE_TYPE_ID, IdSizes()));
     }
 
     public String Signature(TypeId clazz) throws IOException {
-        int id = GetIdAndIncrement();
-        SendPacketHeader(clazz.size(), id, 0x00, 2, 1);
+        int id = StartRequestPacket(2, 1);
         WriteTypeId(clazz);
+        FinishPacket();
         return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadString());
     }
 
     public ArrayList<TypeId> Interfaces(TypeId clazz) throws IOException {
-        int id = GetIdAndIncrement();
-        SendPacketHeader(clazz.size(), id, 0x00, 2, 10);
+        int id = StartRequestPacket(2, 10);
         WriteTypeId(clazz);
+        FinishPacket();
         return WaitForReply(id, (length, errorCode, input, bytes) -> {
             int count = input.ReadInt();
             ArrayList<TypeId> interfaces = new ArrayList<>(count);
@@ -317,40 +334,36 @@ public class Debugger implements IReadWrite {
     }
 
     public void SetValuesClass(TypeId classId, List<FieldUpdate> fieldUpdates) throws IOException {
-        int id = GetIdAndIncrement();
-        int len = classId.size() + 4;
-        for(FieldUpdate update : fieldUpdates) {
-            len += update.fieldId().size() + update.val().size();
-        }
-        SendPacketHeader(len, id, 0x00, 3, 2);
+        int id = StartRequestPacket(3, 2);
         WriteTypeId(classId);
         WriteInt(fieldUpdates.size());
         for(FieldUpdate update : fieldUpdates) {
             WriteTypeId(update.fieldId());
             update.val().write(this);
         }
+        FinishPacket();
         WaitForReply(id, (length, errorCode, input, bytes) -> null);
     }
 
     public VMReflectedType ReflectedType(TypeId classObjectId) throws IOException {
-        int id = GetIdAndIncrement();
-        SendPacketHeader(classObjectId.size(), id, 0x00, 17, 1);
+        int id = StartRequestPacket(17, 1);
         WriteTypeId(classObjectId);
+        FinishPacket();
         return WaitForReply(id, (length, errorCode, input, bytes) -> new VMReflectedType(ReferenceType.getReferenceType(input.ReadByte()), input.ReadTypeId(TypeIdTypes.REFERENCE_TYPE_ID, IdSizes())));
     }
 
     public TypeId CreateString(String str) throws IOException {
-        int id = GetIdAndIncrement();
-        SendPacketHeader(4 + str.length(), id, 0x00, 1, 11);
+        int id = StartRequestPacket(1, 11);
         WriteString(str);
+        FinishPacket();
         return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadTypeId(TypeIdTypes.OBJECT_ID, IdSizes()));
     }
 
     public TypeId NewInstanceArray(TypeId arrayType, int arrayLength) throws IOException {
-        int id = GetIdAndIncrement();
-        SendPacketHeader(arrayType.size() + 4, id, 0x00, 4, 1);
+        int id = StartRequestPacket(4, 1);
         WriteTypeId(arrayType);
         WriteInt(arrayLength);
+        FinishPacket();
         return WaitForReply(id, (length, errorCode, input, bytes) -> {
             if(input.ReadByte() != '[') System.err.println("Array tag required");
             return input.ReadTypeId(TypeIdTypes.OBJECT_ID, IdSizes());
@@ -358,21 +371,19 @@ public class Debugger implements IReadWrite {
     }
 
     public void Suspend() throws IOException {
-        int id = GetIdAndIncrement();
-        SendPacketHeader(0, id, 0x00, 1, 8);
+        int id = SendRequestPacket(1, 5);
         WaitForReply(id, (length, errorCode, input, bytes) -> null);
     }
 
     public void Resume() throws IOException {
-        int id = GetIdAndIncrement();
-        SendPacketHeader(0, id, 0x00, 1, 9);
+        int id = SendRequestPacket(1, 9);
         WaitForReply(id, (length, errorCode, input, bytes) -> null);
     }
 
     public int Modifiers(TypeId refType) throws IOException {
-        int id = GetIdAndIncrement();
-        SendPacketHeader(refType.size(), id, 0x00, 2, 3);
+        int id = StartRequestPacket(2, 3);
         WriteTypeId(refType);
+        FinishPacket();
         return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadInt());
     }
 
