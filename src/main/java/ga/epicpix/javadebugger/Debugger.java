@@ -356,4 +356,17 @@ public class Debugger implements IReadWrite {
             return input.ReadTypeId(TypeIdTypes.OBJECT_ID, IdSizes());
         });
     }
+
+    public void Suspend() throws IOException {
+        int id = GetIdAndIncrement();
+        SendPacketHeader(0, id, 0x00, 1, 8);
+        WaitForReply(id, (length, errorCode, input, bytes) -> null);
+    }
+
+    public void Resume() throws IOException {
+        int id = GetIdAndIncrement();
+        SendPacketHeader(0, id, 0x00, 1, 9);
+        WaitForReply(id, (length, errorCode, input, bytes) -> null);
+    }
+
 }

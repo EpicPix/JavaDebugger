@@ -169,6 +169,9 @@ public class Start {
             System.out.println("Array: " + debugger.NewInstanceArray(arrayType, length));
         })))));
 
+        dispatcher.register(literal("suspend").executes(d -> silenceException(d, Debugger::Suspend)));
+        dispatcher.register(literal("resume").executes(d -> silenceException(d, Debugger::Resume)));
+
         dispatcher.register(literal("setstaticfield")
                 .then(argument("class", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID))
                     .then(argument("field", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID))
