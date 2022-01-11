@@ -369,4 +369,11 @@ public class Debugger implements IReadWrite {
         WaitForReply(id, (length, errorCode, input, bytes) -> null);
     }
 
+    public int Modifiers(TypeId refType) throws IOException {
+        int id = GetIdAndIncrement();
+        SendPacketHeader(refType.size(), id, 0x00, 2, 3);
+        WriteTypeId(refType);
+        return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadInt());
+    }
+
 }

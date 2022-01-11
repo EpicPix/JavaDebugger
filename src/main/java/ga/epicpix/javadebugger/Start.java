@@ -163,6 +163,10 @@ public class Start {
             System.out.println("Reflected Type: " + reflectedType.typeId() + " - " + reflectedType.referenceType());
         }))));
 
+        dispatcher.register(literal("modifiers").then(argument("typeid", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
+            System.out.println("Modifiers: " + Integer.toHexString(debugger.Modifiers(d.getArgument("typeid", TypeId.class))));
+        }))));
+
         dispatcher.register(literal("newarray").then(argument("arraytype", TypeIdArgumentType.typeId(deb.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).then(argument("length", IntegerArgumentType.integer(0)).executes(d -> silenceException(d, (debugger) -> {
             TypeId arrayType = d.getArgument("arraytype", TypeId.class);
             int length = IntegerArgumentType.getInteger(d, "length");
