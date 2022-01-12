@@ -471,7 +471,12 @@ public class Debugger implements IReadWrite {
 
     public class StringReference {
 
-        // Value (1)
+        public String Value(TypeId stringObject) throws IOException {
+            int id = StartRequestPacket(10, 1);
+            WriteTypeId(stringObject);
+            FinishPacket();
+            return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadString());
+        }
 
     }
 

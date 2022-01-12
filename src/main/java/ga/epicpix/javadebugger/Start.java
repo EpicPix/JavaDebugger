@@ -144,6 +144,10 @@ public class Start {
             System.out.println("Superclass: " + debugger.ClassType.SuperClass(d.getArgument("typeid", TypeId.class)));
         }))));
 
+        dispatcher.register(literal("stringvalue").then(argument("typeid", TypeIdArgumentType.typeId(deb.VirtualMachine.IdSizes(), TypeIdTypes.OBJECT_ID)).executes(d -> silenceException(d, (debugger) -> {
+            System.out.println("Value: " + debugger.StringReference.Value(d.getArgument("typeid", TypeId.class)));
+        }))));
+
         dispatcher.register(literal("signature").then(argument("typeid", TypeIdArgumentType.typeId(deb.VirtualMachine.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
             System.out.println("Signature: " + debugger.ReferenceType.Signature(d.getArgument("typeid", TypeId.class)));
         }))));
