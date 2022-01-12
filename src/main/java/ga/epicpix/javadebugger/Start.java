@@ -60,7 +60,7 @@ public class Start {
     public static void registerCommands(CommandDispatcher<Debugger> dispatcher, Debugger deb) throws IOException {
         alias(dispatcher, dispatcher.register(literal("capabilities").executes(d -> silenceException(d, (debugger) -> {
             System.out.println("Capabilities:");
-            debugger.VirtualMachine.NewCapabilities().Print();
+            debugger.VirtualMachine.CapabilitiesNew().Print();
         }))), "caps");
 
         alias(dispatcher, dispatcher.register(literal("version").executes(d -> silenceException(d, (debugger) -> {

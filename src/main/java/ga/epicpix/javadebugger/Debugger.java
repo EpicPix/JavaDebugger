@@ -279,7 +279,7 @@ public class Debugger implements IReadWrite {
         // HoldEvents (15)
         // ReleaseEvents (16)
 
-        public VMCapabilities NewCapabilities() throws IOException {
+        public VMCapabilities CapabilitiesNew() throws IOException {
             if(capabilities != null) return capabilities;
             int id = SendRequestPacket(1, 17);
             return capabilities = WaitForReply(id, (length, errorCode, input, bytes) -> {
@@ -292,6 +292,7 @@ public class Debugger implements IReadWrite {
         // RedefineClasses (18)
         // SetDefaultStratum (19)
         // AllClassesWithGeneric (20)
+        // InstanceCounts (21)
 
         public ArrayList<TypeId> AllModules() throws IOException {
             int id = SendRequestPacket(1, 22);
