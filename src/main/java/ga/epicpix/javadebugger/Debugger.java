@@ -386,7 +386,14 @@ public class Debugger implements IReadWrite {
         }
 
         // GetValues (6)
-        // SourceFile (7)
+
+        public String SourceFile(TypeId refType) throws IOException {
+            int id = StartRequestPacket(2, 7);
+            WriteTypeId(refType);
+            FinishPacket();
+            return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadString());
+        }
+
         // NestedTypes (8)
         // Status (9)
 

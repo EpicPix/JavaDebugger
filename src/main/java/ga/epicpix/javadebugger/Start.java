@@ -132,6 +132,10 @@ public class Start {
             System.out.println("String Id: " + debugger.VirtualMachine.CreateString(StringArgumentType.getString(d, "string")));
         }))));
 
+        dispatcher.register(literal("sourcefile").then(argument("typeid", TypeIdArgumentType.typeId(deb.VirtualMachine.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
+            System.out.println("Source File: " + debugger.ReferenceType.SourceFile(d.getArgument("typeid", TypeId.class)));
+        }))));
+
         dispatcher.register(literal("methods").then(argument("typeid", TypeIdArgumentType.typeId(deb.VirtualMachine.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
             System.out.println("Methods:");
             ArrayList<VMMethodInfoData> methodList = debugger.ReferenceType.Methods(d.getArgument("typeid", TypeId.class));
