@@ -318,7 +318,12 @@ public class Debugger implements IReadWrite {
             return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadString());
         }
 
-        // ClassLoader (2)
+        public TypeId ClassLoader(TypeId refType) throws IOException {
+            int id = StartRequestPacket(2, 2);
+            WriteTypeId(refType);
+            FinishPacket();
+            return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadTypeId(TypeIdTypes.OBJECT_ID, VirtualMachine.IdSizes()));
+        }
 
         public int Modifiers(TypeId refType) throws IOException {
             int id = StartRequestPacket(2, 3);
