@@ -156,6 +156,10 @@ public class Start {
             System.out.println("Class Loader: " + debugger.ReferenceType.ClassLoader(d.getArgument("typeid", TypeId.class)));
         }))));
 
+        dispatcher.register(literal("classobject").then(argument("typeid", TypeIdArgumentType.typeId(deb.VirtualMachine.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
+            System.out.println("Class Object: " + debugger.ReferenceType.ClassObject(d.getArgument("typeid", TypeId.class)));
+        }))));
+
         dispatcher.register(literal("interfaces").then(argument("typeid", TypeIdArgumentType.typeId(deb.VirtualMachine.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
             System.out.println("Interfaces:");
             ArrayList<TypeId> interfaces = debugger.ReferenceType.Interfaces(d.getArgument("typeid", TypeId.class));

@@ -387,7 +387,13 @@ public class Debugger implements IReadWrite {
             });
         }
 
-        // ClassObject (11)
+        public TypeId ClassObject(TypeId refType) throws IOException {
+            int id = StartRequestPacket(2, 11);
+            WriteTypeId(refType);
+            FinishPacket();
+            return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadTypeId(TypeIdTypes.OBJECT_ID, VirtualMachine.IdSizes()));
+        }
+
         // SourceDebugExtension (12)
         // SignatureWithGeneric (13)
         // FieldsWithGeneric (14)
