@@ -423,7 +423,14 @@ public class Debugger implements IReadWrite {
         // FieldsWithGeneric (14)
         // MethodsWithGeneric (15)
         // Instances (16)
-        // ClassFileVersion (17)
+
+        public VMClassVersionInfo ClassFileVersion(TypeId refType) throws IOException {
+            int id = StartRequestPacket(2, 17);
+            WriteTypeId(refType);
+            FinishPacket();
+            return WaitForReply(id, (length, errorCode, input, bytes) -> new VMClassVersionInfo(input.ReadInt(), input.ReadInt()));
+        }
+
         // ConstantPool (18)
         // Module (19)
 

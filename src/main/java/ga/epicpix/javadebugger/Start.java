@@ -136,6 +136,11 @@ public class Start {
             System.out.println("Source File: " + debugger.ReferenceType.SourceFile(d.getArgument("typeid", TypeId.class)));
         }))));
 
+        dispatcher.register(literal("classfileversion").then(argument("typeid", TypeIdArgumentType.typeId(deb.VirtualMachine.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
+            VMClassVersionInfo version = debugger.ReferenceType.ClassFileVersion(d.getArgument("typeid", TypeId.class));
+            System.out.println("Class Version: " + version.majorVersion() + "." + version.minorVersion());
+        }))));
+
         dispatcher.register(literal("methods").then(argument("typeid", TypeIdArgumentType.typeId(deb.VirtualMachine.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
             System.out.println("Methods:");
             ArrayList<VMMethodInfoData> methodList = debugger.ReferenceType.Methods(d.getArgument("typeid", TypeId.class));
