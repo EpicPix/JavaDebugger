@@ -274,7 +274,24 @@ public class Debugger implements IReadWrite {
         }
 
         // Capabilities (12)
-        // ClassPaths (13)
+
+        public VMClasspaths ClassPaths() throws IOException {
+            int id = SendRequestPacket(1, 13);
+            return WaitForReply(id, (length, errorCode, input, bytes) -> {
+                String baseDir = input.ReadString();
+
+                int classpathsCount = input.ReadInt();
+                ArrayList<String> classpaths = new ArrayList<>(classpathsCount);
+                for(int i = 0; i<classpathsCount; i++) classpaths.add(input.ReadString());
+
+                int bootClasspathsCount = input.ReadInt();
+                ArrayList<String> bootClasspaths = new ArrayList<>(bootClasspathsCount);
+                for(int i = 0; i<bootClasspathsCount; i++) bootClasspaths.add(input.ReadString());
+
+                return new VMClasspaths(baseDir,  classpaths, bootClasspaths);
+            });
+        }
+
         // DisposeObjects (14)
         // HoldEvents (15)
         // ReleaseEvents (16)

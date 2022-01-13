@@ -114,6 +114,20 @@ public class Start {
             }
         })));
 
+        dispatcher.register(literal("classpaths").executes(d -> silenceException(d, (debugger) -> {
+            System.out.println("Classpath Info:");
+            VMClasspaths classpaths = debugger.VirtualMachine.ClassPaths();
+            System.out.println("Base dir: '" + classpaths.baseDir() + "'");
+            if(classpaths.classpaths().size() != 0) {
+                System.out.println("Classpaths:");
+                for (String classpath : classpaths.classpaths()) System.out.println("- '" + classpath + "'");
+            }
+            if(classpaths.bootClasspaths().size() != 0) {
+                System.out.println("Boot Classpaths:");
+                for (String bootClasspath : classpaths.bootClasspaths()) System.out.println("- '" + bootClasspath + "'");
+            }
+        })));
+
         dispatcher.register(literal("createstring").then(argument("string", StringArgumentType.string()).executes(d -> silenceException(d, (debugger) -> {
             System.out.println("String Id: " + debugger.VirtualMachine.CreateString(StringArgumentType.getString(d, "string")));
         }))));
