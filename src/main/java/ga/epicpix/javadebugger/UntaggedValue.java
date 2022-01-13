@@ -6,7 +6,7 @@ import java.io.IOException;
 
 public class UntaggedValue {
 
-    private final Object val;
+    protected final Object val;
 
     public UntaggedValue(byte num) {val = num;}
     public UntaggedValue(short num) {val = num;}
