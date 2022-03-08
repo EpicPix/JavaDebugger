@@ -71,6 +71,10 @@ public class Start {
             System.exit(0);
         }))), "q");
 
+        alias(dispatcher, dispatcher.register(literal("dispose").executes(d -> silenceException(d, (debugger) -> {
+            debugger.VirtualMachine.Dispose();
+        }))));
+
         dispatcher.register(literal("idsizes").executes(d -> silenceException(d, (debugger) -> {
             System.out.println("Id Sizes:");
             debugger.VirtualMachine.IdSizes().Print();

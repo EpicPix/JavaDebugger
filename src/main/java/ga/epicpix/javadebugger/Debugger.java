@@ -252,7 +252,10 @@ public class Debugger implements IReadWrite {
             });
         }
 
-        // Dispose (6)
+
+        public void Dispose() throws IOException {
+            SendRequestPacket(1, 6);
+        }
 
         public VMIdSizes IdSizes() throws IOException {
             if(idSizes != null) return idSizes;
