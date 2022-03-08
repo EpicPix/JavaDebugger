@@ -549,7 +549,13 @@ public class Debugger implements IReadWrite {
 
     public class ThreadGroupReference {
 
-        // Name (1)
+        public String Name(TypeId groupId) throws IOException {
+            int id = StartRequestPacket(12, 1);
+            WriteTypeId(groupId);
+            FinishPacket();
+            return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadString());
+        }
+
         // Parent (2)
         // Children (3)
 
