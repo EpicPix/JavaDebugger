@@ -105,6 +105,14 @@ public class Start {
             }
         })));
 
+        dispatcher.register(literal("allthreadgroups").executes(d -> silenceException(d, (debugger) -> {
+            System.out.println("All Threads:");
+            ArrayList<TypeId> threadGroupIds = debugger.VirtualMachine.TopLevelThreadGroups();
+            for(TypeId groupId : threadGroupIds) {
+                System.out.println(groupId + " - \"" + debugger.ThreadGroupReference.Name(groupId) + "\"");
+            }
+        })));
+
         dispatcher.register(literal("allmodules").executes(d -> silenceException(d, (debugger) -> {
             System.out.println("All Modules:");
             ArrayList<TypeId> moduleIds = debugger.VirtualMachine.AllModules();

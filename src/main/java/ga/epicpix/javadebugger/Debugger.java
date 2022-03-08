@@ -239,7 +239,19 @@ public class Debugger implements IReadWrite {
             });
         }
 
-        // TopLevelThreadGroups (5)
+        public ArrayList<TypeId> TopLevelThreadGroups() throws IOException {
+            int id = SendRequestPacket(1, 5);
+            return WaitForReply(id, (length, errorCode, input, bytes) -> {
+                int groups = input.ReadInt();
+                ArrayList<TypeId> groupIds = new ArrayList<>(groups);
+                for(int i = 0; i<groups; i++) {
+                    TypeId typeId = input.ReadTypeId(TypeIdTypes.OBJECT_ID, VirtualMachine.IdSizes());
+                    groupIds.add(typeId);
+                }
+                return groupIds;
+            });
+        }
+
         // Dispose (6)
 
         public VMIdSizes IdSizes() throws IOException {
