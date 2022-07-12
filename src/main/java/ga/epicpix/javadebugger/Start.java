@@ -101,6 +101,20 @@ public class Start {
             }
         }))));
 
+        dispatcher.register(literal("gettype").then(argument("type", StringArgumentType.greedyString()).executes(d -> silenceException(d, (debugger) -> {
+            String type = DescriptorType.typeToDescriptor(StringArgumentType.getString(d, "type"));
+            System.out.println("Searching for type: " + type);
+            ArrayList<VMClassInfoData> classList = debugger.VirtualMachine.ClassesBySignature(type);
+            int maxStatusLength = "[VERIFIED, PREPARED, INITIALIZED]".length();
+            for(VMClassInfoData classInfo : classList) {
+                String status = "[" + classInfo.status().getStatus() + "]";
+                System.out.println(classInfo.referenceTypeId() + " - " + status + " ".repeat(maxStatusLength - status.length()) + " - " + classInfo.refTypeTag() + " - " + classInfo.signature());
+            }
+            if(classList.size() == 0) {
+                System.out.println("Nothing found");
+            }
+        }))));
+
         dispatcher.register(literal("allthreads").executes(d -> silenceException(d, (debugger) -> {
             System.out.println("All Threads:");
             ArrayList<TypeId> threadIds = debugger.VirtualMachine.AllThreads();
