@@ -91,6 +91,17 @@ public class Start {
             }
         })));
 
+        dispatcher.register(literal("allclasseswithgeneric").executes(d -> silenceException(d, (debugger) -> {
+            System.out.println("All Loaded Classes (With Generics):");
+            ArrayList<VMClassInfoData> classList = debugger.VirtualMachine.AllClassesWithGeneric();
+            int maxStatusLength = "[VERIFIED, PREPARED, INITIALIZED]".length();
+            int maxRefTypeLength = RefType.INTERFACE.name().length();
+            for(VMClassInfoData classInfo : classList) {
+                String status = "[" + classInfo.status().getStatus() + "]";
+                System.out.println(classInfo.referenceTypeId() + " - " + status + " ".repeat(maxStatusLength - status.length()) + " - " + classInfo.refTypeTag() + " ".repeat(maxRefTypeLength - classInfo.refTypeTag().name().length()) + " " + classInfo.signature() + " " + classInfo.genericSignature());
+            }
+        })));
+
         dispatcher.register(literal("instancecount").then(argument("ref", TypeIdArgumentType.typeId(deb.VirtualMachine.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
             TypeId typeId = d.getArgument("ref", TypeId.class);
             System.out.println("Instance count for " + typeId + " is " + debugger.VirtualMachine.InstanceCounts(typeId)[0]);

@@ -204,7 +204,7 @@ public class Debugger implements IReadWrite {
                     RefType refTypeTag = RefType.getReferenceType(input.ReadByte());
                     TypeId typeId = input.ReadTypeId(TypeIdTypes.REFERENCE_TYPE_ID, VirtualMachine.IdSizes());
                     ClassLoadStatus status = new ClassLoadStatus(input.ReadInt());
-                    classList.add(new VMClassInfoData(refTypeTag, typeId, clazz, status));
+                    classList.add(new VMClassInfoData(refTypeTag, typeId, clazz, null, status));
                 }
                 return classList;
             });
@@ -220,7 +220,7 @@ public class Debugger implements IReadWrite {
                     TypeId typeId = input.ReadTypeId(TypeIdTypes.REFERENCE_TYPE_ID, VirtualMachine.IdSizes());
                     String signature = input.ReadString();
                     ClassLoadStatus status = new ClassLoadStatus(input.ReadInt());
-                    classList.add(new VMClassInfoData(refTypeTag, typeId, signature, status));
+                    classList.add(new VMClassInfoData(refTypeTag, typeId, signature, null, status));
                 }
                 return classList;
             });
@@ -323,7 +323,23 @@ public class Debugger implements IReadWrite {
 
         // RedefineClasses (18)
         // SetDefaultStratum (19)
-        // AllClassesWithGeneric (20)
+
+        public ArrayList<VMClassInfoData> AllClassesWithGeneric() throws IOException {
+            int id = SendRequestPacket(1, 20);
+            return WaitForReply(id, (length, errorCode, input, bytes) -> {
+                int classes = input.ReadInt();
+                ArrayList<VMClassInfoData> classList = new ArrayList<>(classes);
+                for(int i = 0; i<classes; i++) {
+                    RefType refTypeTag = RefType.getReferenceType(input.ReadByte());
+                    TypeId typeId = input.ReadTypeId(TypeIdTypes.REFERENCE_TYPE_ID, VirtualMachine.IdSizes());
+                    String signature = input.ReadString();
+                    String genericSignature = input.ReadString();
+                    ClassLoadStatus status = new ClassLoadStatus(input.ReadInt());
+                    classList.add(new VMClassInfoData(refTypeTag, typeId, signature, genericSignature, status));
+                }
+                return classList;
+            });
+        }
 
         public long[] InstanceCounts(TypeId... refs) throws IOException {
             int id = StartRequestPacket(1, 21);
