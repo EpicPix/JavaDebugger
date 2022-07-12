@@ -112,6 +112,11 @@ public class Start {
             System.out.println("Status for " + typeId + " is " + debugger.ReferenceType.Status(typeId));
         }))));
 
+        dispatcher.register(literal("refsourcedebugextension").then(argument("ref", TypeIdArgumentType.typeId(deb.VirtualMachine.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
+            TypeId typeId = d.getArgument("ref", TypeId.class);
+            System.out.println("Source Debug Extension for " + typeId + " is " + debugger.ReferenceType.SourceDebugExtension(typeId));
+        }))));
+
         dispatcher.register(literal("class").then(argument("class", StringArgumentType.greedyString()).executes(d -> silenceException(d, (debugger) -> {
             System.out.println("Classes Found:");
             ArrayList<VMClassInfoData> classList = debugger.VirtualMachine.ClassesBySignature(StringArgumentType.getString(d, "class"));

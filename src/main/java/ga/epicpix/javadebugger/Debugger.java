@@ -473,7 +473,13 @@ public class Debugger implements IReadWrite {
             return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadTypeId(TypeIdTypes.OBJECT_ID, VirtualMachine.IdSizes()));
         }
 
-        // SourceDebugExtension (12)
+        public String SourceDebugExtension(TypeId refType) throws IOException {
+            int id = StartRequestPacket(2, 12);
+            WriteTypeId(refType);
+            FinishPacket();
+            return WaitForReply(id, (length, errorCode, input, bytes) -> input.ReadString());
+        }
+
         // SignatureWithGeneric (13)
         // FieldsWithGeneric (14)
         // MethodsWithGeneric (15)
