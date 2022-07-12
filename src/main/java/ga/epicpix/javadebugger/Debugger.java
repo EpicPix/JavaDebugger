@@ -444,7 +444,13 @@ public class Debugger implements IReadWrite {
         }
 
         // NestedTypes (8)
-        // Status (9)
+
+        public ClassLoadStatus Status(TypeId refType) throws IOException {
+            int id = StartRequestPacket(2, 9);
+            WriteTypeId(refType);
+            FinishPacket();
+            return WaitForReply(id, (length, errorCode, input, bytes) -> new ClassLoadStatus(input.ReadInt()));
+        }
 
         public ArrayList<TypeId> Interfaces(TypeId clazz) throws IOException {
             int id = StartRequestPacket(2, 10);
