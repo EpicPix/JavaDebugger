@@ -91,6 +91,11 @@ public class Start {
             }
         })));
 
+        dispatcher.register(literal("instancecount").then(argument("ref", TypeIdArgumentType.typeId(deb.VirtualMachine.IdSizes(), TypeIdTypes.REFERENCE_TYPE_ID)).executes(d -> silenceException(d, (debugger) -> {
+            TypeId typeId = d.getArgument("ref", TypeId.class);
+            System.out.println("Instance count for " + typeId + " is " + debugger.VirtualMachine.InstanceCounts(typeId)[0]);
+        }))));
+
         dispatcher.register(literal("class").then(argument("class", StringArgumentType.greedyString()).executes(d -> silenceException(d, (debugger) -> {
             System.out.println("Classes Found:");
             ArrayList<VMClassInfoData> classList = debugger.VirtualMachine.ClassesBySignature(StringArgumentType.getString(d, "class"));

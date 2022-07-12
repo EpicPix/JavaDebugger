@@ -324,7 +324,25 @@ public class Debugger implements IReadWrite {
         // RedefineClasses (18)
         // SetDefaultStratum (19)
         // AllClassesWithGeneric (20)
-        // InstanceCounts (21)
+
+        public long[] InstanceCounts(TypeId... refs) throws IOException {
+            int id = StartRequestPacket(1, 21);
+            WriteInt(refs.length);
+            var refTypeSize = VirtualMachine.IdSizes().ReferenceTypeIdSize();
+            for(TypeId ref : refs) {
+                if(ref.size() != refTypeSize) throw new RuntimeException("Wrong reference type id size!");
+                ref.write(packetCreations.get(Thread.currentThread()));
+            }
+            FinishPacket();
+            return WaitForReply(id, (length, errorCode, input, bytes) -> {
+                int count = input.ReadInt();
+                long[] counts = new long[count];
+                for(int i = 0; i<count; i++) {
+                    counts[i] = input.ReadLong();
+                }
+                return counts;
+            });
+        }
 
         public ArrayList<TypeId> AllModules() throws IOException {
             int id = SendRequestPacket(1, 22);

@@ -15,7 +15,7 @@ public class DescriptorType {
         else if(type.equals("float")) output.append("F");
         else if(type.equals("short")) output.append("S");
         else if(type.equals("char")) output.append("C");
-        else output.append(type.replace('/', '.'));
+        else output.append("L").append(type.replace('.', '/')).append(";");
         return output.toString();
     }
 
