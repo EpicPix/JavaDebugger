@@ -492,7 +492,18 @@ public class Debugger implements IReadWrite {
             return WaitForReply(id, (length, errorCode, input, bytes) -> new VMClassVersionInfo(input.ReadInt(), input.ReadInt()));
         }
 
-        // ConstantPool (18)
+        public VMConstantPool ConstantPool(TypeId refType) throws IOException {
+            int id = StartRequestPacket(2, 18);
+            WriteTypeId(refType);
+            FinishPacket();
+            return WaitForReply(id, (length, errorCode, input, bytes) -> {
+                int count = input.ReadInt();
+                byte[] bs = new byte[input.ReadInt()];
+                for(int i = 0; i<bs.length; i++) bs[i] = input.ReadByte();
+                return new VMConstantPool(count, bs);
+            });
+        }
+
         // Module (19)
 
     }
