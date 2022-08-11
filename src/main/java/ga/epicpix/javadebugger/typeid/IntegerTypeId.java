@@ -29,4 +29,8 @@ public final class IntegerTypeId extends TypeId {
         return 4;
     }
 
+    public boolean isNull() {
+        return val == 0x0;
+    }
+
 }

@@ -29,4 +29,7 @@ public final class LongTypeId extends TypeId {
         return 8;
     }
 
+    public boolean isNull() {
+        return val == 0x0;
+    }
 }

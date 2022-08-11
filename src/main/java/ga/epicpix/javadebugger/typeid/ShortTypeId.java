@@ -29,4 +29,7 @@ public final class ShortTypeId extends TypeId {
         return 2;
     }
 
+    public boolean isNull() {
+        return val == 0x0;
+    }
 }

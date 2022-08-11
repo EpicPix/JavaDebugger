@@ -11,4 +11,6 @@ public abstract sealed class TypeId permits ByteTypeId, ShortTypeId, IntegerType
     public abstract int size();
     public abstract String toString();
 
+    public abstract boolean isNull();
+
 }

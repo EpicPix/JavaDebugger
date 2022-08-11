@@ -29,4 +29,7 @@ public final class ByteTypeId extends TypeId {
         return 1;
     }
 
+    public boolean isNull() {
+        return val == 0x0;
+    }
 }
