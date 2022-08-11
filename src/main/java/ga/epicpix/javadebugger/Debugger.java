@@ -559,7 +559,19 @@ public class Debugger implements IReadWrite {
 
         // LineTable (1)
         // VariableTable (2)
-        // Bytecodes (3)
+
+        public byte[] Bytecodes(TypeId refType, TypeId methodId) throws IOException {
+            int id = StartRequestPacket(6, 3);
+            WriteTypeId(refType);
+            WriteTypeId(methodId);
+            FinishPacket();
+            return WaitForReply(id, (length, errorCode, input, bytes) -> {
+                byte[] bs = new byte[input.ReadInt()];
+                for(int i = 0; i<bs.length; i++) bs[i] = input.ReadByte();
+                return bs;
+            });
+        }
+
         // IsObsolete (4)
         // VariableTableWithGeneric (5)
 
